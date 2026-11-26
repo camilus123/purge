@@ -1,6 +1,120 @@
 {
+  "_comment": "Reactors. Steady and Surge are mutually exclusive branches after Fission Cell II.",
   "items": [
-    { "id": "reactor.basic.t1", "name": "Fission Cell I", "category": "reactor", "branch": "basic", "tier": 1, "cost": 0,
-      "output": 100, "capacitor": 150 }
+    {
+      "id": "reactor.core.t1",
+      "name": "Fission Cell I",
+      "description": "Standard ship reactor. Output feeds shields and the weapon energy pool; the capacitor is the size of that pool.",
+      "category": "reactor",
+      "branch": "core",
+      "tier": 1,
+      "cost": 0,
+      "output": 100,
+      "capacitor": 150
+    },
+    {
+      "id": "reactor.core.t2",
+      "name": "Fission Cell II",
+      "description": "Standard ship reactor. Output feeds shields and the weapon energy pool; the capacitor is the size of that pool.",
+      "category": "reactor",
+      "branch": "core",
+      "tier": 2,
+      "requires": [
+        "reactor.core.t1"
+      ],
+      "cost": 1400,
+      "output": 125,
+      "capacitor": 180
+    },
+    {
+      "id": "reactor.steady.t3",
+      "name": "Lattice Reactor I",
+      "description": "Steady branch: high constant output, small capacitor. Best for sustained fire and fast shield recharge.",
+      "category": "reactor",
+      "branch": "steady",
+      "tier": 3,
+      "requires": [
+        "reactor.core.t2"
+      ],
+      "excludes": [
+        "reactor.surge.t3"
+      ],
+      "cost": 2800,
+      "output": 165,
+      "capacitor": 180
+    },
+    {
+      "id": "reactor.steady.t4",
+      "name": "Lattice Reactor II",
+      "description": "Steady branch: high constant output, small capacitor. Best for sustained fire and fast shield recharge.",
+      "category": "reactor",
+      "branch": "steady",
+      "tier": 4,
+      "requires": [
+        "reactor.steady.t3"
+      ],
+      "cost": 4800,
+      "output": 210,
+      "capacitor": 200
+    },
+    {
+      "id": "reactor.steady.t5",
+      "name": "Lattice Reactor III",
+      "description": "Steady branch: high constant output, small capacitor. Best for sustained fire and fast shield recharge.",
+      "category": "reactor",
+      "branch": "steady",
+      "tier": 5,
+      "requires": [
+        "reactor.steady.t4"
+      ],
+      "cost": 7500,
+      "output": 270,
+      "capacitor": 220
+    },
+    {
+      "id": "reactor.surge.t3",
+      "name": "Surge Bank I",
+      "description": "Surge branch: lower output, very large capacitor. Store energy, then unload it in bursts.",
+      "category": "reactor",
+      "branch": "surge",
+      "tier": 3,
+      "requires": [
+        "reactor.core.t2"
+      ],
+      "excludes": [
+        "reactor.steady.t3"
+      ],
+      "cost": 2800,
+      "output": 140,
+      "capacitor": 360
+    },
+    {
+      "id": "reactor.surge.t4",
+      "name": "Surge Bank II",
+      "description": "Surge branch: lower output, very large capacitor. Store energy, then unload it in bursts.",
+      "category": "reactor",
+      "branch": "surge",
+      "tier": 4,
+      "requires": [
+        "reactor.surge.t3"
+      ],
+      "cost": 4800,
+      "output": 170,
+      "capacitor": 520
+    },
+    {
+      "id": "reactor.surge.t5",
+      "name": "Surge Bank III",
+      "description": "Surge branch: lower output, very large capacitor. Store energy, then unload it in bursts.",
+      "category": "reactor",
+      "branch": "surge",
+      "tier": 5,
+      "requires": [
+        "reactor.surge.t4"
+      ],
+      "cost": 7500,
+      "output": 205,
+      "capacitor": 720
+    }
   ]
 }

@@ -18,28 +18,6 @@
     }
   },
   "sprites": {
-    "proj.laser.t1": {
-      "color": [
-        0.15,
-        0.85,
-        1.0
-      ],
-      "intensity": 3.0,
-      "width": 1.7,
-      "length": 6.5,
-      "core": 0.32
-    },
-    "proj.chaingun.t1": {
-      "color": [
-        1.0,
-        0.8,
-        0.35
-      ],
-      "intensity": 2.6,
-      "width": 1.0,
-      "length": 3.8,
-      "core": 0.28
-    },
     "proj.enemy.orb": {
       "color": [
         1.0,
@@ -116,6 +94,171 @@
       "width": 1.6,
       "length": 1.6,
       "core": 0.3
+    },
+    "proj.laser.bolt": {
+      "color": [
+        0.15,
+        0.85,
+        1.0
+      ],
+      "intensity": 3.0,
+      "width": 1.7,
+      "length": 6.5,
+      "core": 0.32
+    },
+    "proj.laser.beam": {
+      "color": [
+        0.15,
+        0.8,
+        1.0
+      ],
+      "intensity": 2.6,
+      "width": 2.6,
+      "length": 9.0,
+      "core": 0.3
+    },
+    "proj.laser.beam.heavy": {
+      "color": [
+        0.35,
+        0.9,
+        1.0
+      ],
+      "intensity": 3.0,
+      "width": 4.0,
+      "length": 9.0,
+      "core": 0.34
+    },
+    "proj.particle": {
+      "color": [
+        0.75,
+        0.4,
+        1.0
+      ],
+      "intensity": 3.0,
+      "width": 1.8,
+      "length": 2.6,
+      "core": 0.35
+    },
+    "proj.phaser.beam": {
+      "color": [
+        1.0,
+        0.45,
+        0.95
+      ],
+      "intensity": 2.6,
+      "width": 2.2,
+      "length": 8.0,
+      "core": 0.28
+    },
+    "proj.rail.trace": {
+      "color": [
+        0.85,
+        0.95,
+        1.0
+      ],
+      "intensity": 3.2,
+      "width": 2.2,
+      "length": 9.0,
+      "core": 0.3
+    },
+    "proj.chaingun": {
+      "color": [
+        1.0,
+        0.8,
+        0.35
+      ],
+      "intensity": 2.6,
+      "width": 1.0,
+      "length": 3.8,
+      "core": 0.28
+    },
+    "proj.autocannon": {
+      "color": [
+        1.0,
+        0.55,
+        0.2
+      ],
+      "intensity": 2.8,
+      "width": 1.9,
+      "length": 2.8,
+      "core": 0.38
+    },
+    "proj.missile": {
+      "color": [
+        1.0,
+        0.85,
+        0.5
+      ],
+      "intensity": 2.8,
+      "width": 1.3,
+      "length": 4.0,
+      "core": 0.35
+    },
+    "proj.rocket": {
+      "color": [
+        1.0,
+        0.7,
+        0.35
+      ],
+      "intensity": 2.6,
+      "width": 0.9,
+      "length": 2.6,
+      "core": 0.32
+    },
+    "proj.torpedo": {
+      "color": [
+        0.5,
+        1.0,
+        0.6
+      ],
+      "intensity": 3.0,
+      "width": 3.2,
+      "length": 7.0,
+      "core": 0.4
+    },
+    "proj.bomb": {
+      "color": [
+        1.0,
+        0.95,
+        0.4
+      ],
+      "intensity": 2.8,
+      "width": 2.6,
+      "length": 2.6,
+      "core": 0.4
+    },
+    "proj.bomblet": {
+      "color": [
+        1.0,
+        0.7,
+        0.3
+      ],
+      "intensity": 2.6,
+      "width": 1.2,
+      "length": 1.2,
+      "core": 0.35
+    },
+    "proj.mine": {
+      "color": [
+        1.0,
+        0.3,
+        0.3
+      ],
+      "intensity": 2.6,
+      "width": 2.2,
+      "length": 2.2,
+      "core": 0.3
+    },
+    "fx.shockwave": {
+      "color": [
+        0.6,
+        0.85,
+        1.0
+      ],
+      "intensity": 2.4,
+      "width": 3.0,
+      "length": 3.0,
+      "core": 0.3
     }
   },
   "sounds": {
@@ -141,6 +284,46 @@
     "sfx.ui.power": {
       "synth": "tick",
       "volume": 0.8
+    },
+    "sfx.weapon.particle": {
+      "synth": "particle",
+      "volume": 0.3
+    },
+    "sfx.weapon.beam": {
+      "synth": "beam",
+      "volume": 0.25
+    },
+    "sfx.weapon.rail": {
+      "synth": "rail",
+      "volume": 0.6
+    },
+    "sfx.weapon.autocannon": {
+      "synth": "cannon",
+      "volume": 0.45
+    },
+    "sfx.special.launch": {
+      "synth": "missile",
+      "volume": 0.6
+    },
+    "sfx.special.empty": {
+      "synth": "empty",
+      "volume": 0.6
+    },
+    "sfx.special.shockwave": {
+      "synth": "shockwave",
+      "volume": 0.9
+    },
+    "sfx.ui.click": {
+      "synth": "tick",
+      "volume": 0.5
+    },
+    "sfx.ui.buy": {
+      "synth": "buy",
+      "volume": 0.6
+    },
+    "sfx.ui.deny": {
+      "synth": "empty",
+      "volume": 0.5
     }
   },
   "shield_visuals": {

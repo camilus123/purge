@@ -21,6 +21,7 @@ var invulnerable: float = 0.0   # seconds of spawn protection left
 
 var armor: float = 100.0
 var armor_max: float = 100.0
+var armor_start: float = 100.0  # armor at the start of the stage; a restart gives this back
 var resist: PackedFloat32Array
 
 var shield_name: String = ""
@@ -38,4 +39,6 @@ var pool: float = 0.0           # weapon energy pool
 var pool_max: float = 150.0
 var shield_share: float = 0.5   # 0..1, the rest goes to weapons
 
-var weapons: Array[WeaponState] = []
+var weapons: Array[WeaponState] = [null, null]   # weapon 1 (LMB) and weapon 2 (RMB); either may be empty
+var special: SpecialState = null
+var special_ammo_start: int = 0

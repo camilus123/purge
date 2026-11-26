@@ -67,12 +67,7 @@
               "x-ref": "tech"
             }
           },
-          "required": [
-            "reactor",
-            "shield",
-            "armor",
-            "weapon1"
-          ],
+          "required": [],
           "additionalProperties": false
         }
       },

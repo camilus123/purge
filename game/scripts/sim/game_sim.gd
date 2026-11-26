@@ -29,8 +29,11 @@ const EV_PLAYER_DEAD := 5
 const EV_SHOT := 6          # value = weapon slot
 const EV_POWER := 7         # value = shield share
 const EV_RESTART := 8
-const EV_SPECIAL := 9
+const EV_SPECIAL := 9      # value = 1 fired, 0 out of ammo, -1 nothing fitted
 const EV_STAGE_CLEAR := 10
+const EV_SPLASH := 11       # value = radius of a weapon explosion
+const EV_RAIL := 12         # x, y = muzzle, value = length of the shot
+const EV_SHOCKWAVE := 13    # value = radius
 const MAX_EVENTS := 512
 
 var player := PlayerShip.new()
@@ -58,6 +61,13 @@ var level_name: String = ""
 var level_time: float = 0.0
 var level_length: float = 0.0   # time of the last spawn; 0 for looping levels
 var clear_time: float = 0.0     # seconds since the stage was cleared
+# Stage statistics for the results screen.
+var spawned_total: int = 0
+var hull_damage_taken: float = 0.0
+var boss_spawned: bool = false
+var boss_killed: bool = false
+var boss_kill_time: float = 0.0  # seconds from the boss appearing to its death
+var boss_par_time: float = 0.0
 
 # Input, written by the game loop before each step.
 var in_move: Vector2 = Vector2.ZERO     # relative aim movement in playfield units, consumed each step
@@ -80,7 +90,7 @@ var _ship_def: Dictionary = {}
 var _loadout: Dictionary = {}
 var _enemy_types: Dictionary = {}       # id -> EnemyType
 var _enemy_type_list: Array[EnemyType] = []
-var _spawns: Array = []                 # [time, EnemyType, x, MovePattern or null] sorted by time
+var _spawns: Array = []                 # [time, EnemyType, x, MovePattern or null, is boss] sorted by time
 var _move_patterns: Dictionary = {}     # id -> MovePattern
 var _attack_patterns: Dictionary = {}   # id -> AttackPattern
 var _loop: bool = false
@@ -104,6 +114,14 @@ var _ref_output: float = 100.0
 var _starved_mult: float = 0.35
 var _power_step: float = 0.1
 var _respawn_invuln: float = 2.0
+var _bursts: Array = []                 # cluster burst definitions, see register_burst()
+var _pending_bursts: PackedFloat32Array # x, y, burst index, struck enemy slot: spawned after the bullet loop
+var _beam_hits: Array = []              # scratch: [along, slot] pairs for beam and rail hits
+# Difficulty multipliers
+var _d_hp: float = 1.0
+var _d_damage: float = 1.0
+var _d_bullet_speed: float = 1.0
+var _d_fire_rate: float = 1.0
 
 
 func _init() -> void:
@@ -119,6 +137,16 @@ func _init() -> void:
 	_rng.seed = 12345
 
 
+## Cluster bursts are kept in a table so bullets can refer to them by index.
+func register_burst(d: Dictionary) -> int:
+	_bursts.append({
+		"count": int(d.get("count", 8)), "speed": float(d.get("speed", 35.0)), "damage": float(d.get("damage", 20.0)),
+		"splash": float(d.get("splash", 3.0)), "lifetime": float(d.get("lifetime", 0.5)),
+		"kind": kind_of(d.get("visual", "proj.bomblet")),
+	})
+	return _bursts.size() - 1
+
+
 ## Visual ids ("proj.laser.t1") are turned into small integers once; the view maps them to looks.
 func kind_of(visual_id: String) -> int:
 	if _kind_index.has(visual_id):
@@ -129,8 +157,10 @@ func kind_of(visual_id: String) -> int:
 	return k
 
 
-## config keys: power, ship, reactor, shield, armor, weapon1, weapon2 (Dictionaries from data),
-## enemies, movement, attack (Arrays of definitions), level (Dictionary).
+## config keys: power, ship, reactor, shield, armor, weapon1, weapon2, special (Dictionaries from data,
+## empty when the slot is empty), enemies, movement, attack (Arrays of definitions), level (Dictionary),
+## difficulty (Dictionary of multipliers, optional), start_armor (float, optional: armor at the start
+## of the stage), start_ammo (int, optional: special ammo at the start of the stage).
 func setup(config: Dictionary) -> void:
 	_power = config["power"]
 	_ship_def = config["ship"]
@@ -140,6 +170,12 @@ func setup(config: Dictionary) -> void:
 	_ref_output = _power.get("reference_reactor_output", 100.0)
 	_starved_mult = _power.get("starved_fire_rate_mult", 0.35)
 	_power_step = _power.get("step", 0.1)
+	var diff: Dictionary = config.get("difficulty", {})
+	_d_hp = diff.get("enemy_hp", 1.0)
+	_d_damage = diff.get("enemy_damage", 1.0)
+	_d_bullet_speed = diff.get("bullet_speed", 1.0)
+	_d_fire_rate = diff.get("fire_rate", 1.0)
+	_bursts.clear()
 
 	_move_patterns.clear()
 	_attack_patterns.clear()
@@ -166,6 +202,7 @@ func set_power_step(step: float) -> void:
 
 func _load_level(level: Dictionary) -> void:
 	level_name = level.get("name", "")
+	boss_par_time = level.get("boss_par_time", 0.0)
 	_base_scroll_speed = level.get("scroll_speed", 12.0)
 	background = level.get("background", {})
 	_loop = level.get("loop", false)
@@ -187,9 +224,10 @@ func _load_level(level: Dictionary) -> void:
 				override = _move_patterns[w["movement"]]
 			else:
 				push_warning("Level refers to unknown movement pattern %s" % w["movement"])
+		var boss: bool = w.get("boss", false)
 		for k in int(w.get("count", 1)):
 			_spawns.append([float(w["t"]) + k * float(w.get("dt", 0.0)), _enemy_types[type_id],
-					float(w.get("x", 0.0)) + k * float(w.get("dx", 0.0)), override])
+					float(w.get("x", 0.0)) + k * float(w.get("dx", 0.0)), override, boss])
 	_spawns.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 	level_length = 0.0
 	if not _loop and not _spawns.is_empty():
@@ -211,6 +249,7 @@ func setup_player() -> void:
 	_respawn_invuln = ship.get("respawn_invulnerable_time", 2.0)
 
 	p.armor_max = armor.get("hp", 100.0)
+	p.armor_start = clampf(float(_loadout.get("start_armor", p.armor_max)), 1.0, p.armor_max)
 	p.resist.resize(damage_types.size())
 	var res: Dictionary = armor.get("resist", {})
 	for i in damage_types.size():
@@ -228,16 +267,21 @@ func setup_player() -> void:
 	p.pool_max = reactor.get("capacitor", 100.0)
 	p.shield_share = _power.get("default_shield_share", 0.5)
 
-	p.weapons.clear()
 	var muzzles: Array = ship.get("muzzles", [[-1.5, -3.0], [1.5, -3.0]])
-	var slot := 0
-	for key: String in ["weapon1", "weapon2"]:
-		if _loadout.has(key) and not (_loadout[key] as Dictionary).is_empty():
-			var w := WeaponState.from_def(_loadout[key], damage_types, self)
+	var keys := ["weapon1", "weapon2"]
+	for slot in 2:
+		p.weapons[slot] = null
+		var def: Dictionary = _loadout.get(keys[slot], {})
+		if not def.is_empty():
+			var w := WeaponState.from_def(def, damage_types, self)
 			w.muzzle_x = muzzles[slot][0]
 			w.muzzle_y = muzzles[slot][1]
-			p.weapons.append(w)
-		slot += 1
+			p.weapons[slot] = w
+	p.special = null
+	var sdef: Dictionary = _loadout.get("special", {})
+	if not sdef.is_empty():
+		p.special = SpecialState.from_def(sdef, damage_types, self)
+		p.special_ammo_start = clampi(int(_loadout.get("start_ammo", p.special.ammo_max)), 0, p.special.ammo_max)
 
 
 ## Restart the stage: the player gets back the armor and shields they entered with.
@@ -252,13 +296,17 @@ func restart() -> void:
 	p.ty = p.y
 	p.vx = 0.0
 	p.vy = 0.0
-	p.armor = p.armor_max
+	p.armor = p.armor_start
 	p.shield = p.shield_max
 	p.shield_timer = 0.0
 	p.pool = p.pool_max
 	p.invulnerable = _respawn_invuln
 	for w in p.weapons:
-		w.reset()
+		if w != null:
+			w.reset()
+	if p.special != null:
+		p.special.ammo = p.special_ammo_start
+		p.special.cooldown = 0.0
 	pbul.clear()
 	ebul.clear()
 	_free_count = 0
@@ -282,6 +330,12 @@ func restart() -> void:
 	_scroll_ptr = 0
 	_spawn_ptr = 0
 	_hp_scale = 1.0
+	spawned_total = 0
+	hull_damage_taken = 0.0
+	boss_spawned = false
+	boss_killed = false
+	boss_kill_time = 0.0
+	_pending_bursts.clear()
 	in_move = Vector2.ZERO
 	_emit(EV_RESTART, p.x, p.y, 0.0)
 
@@ -307,9 +361,63 @@ func shift_power(dir: int) -> void:
 	_emit(EV_POWER, p.x, p.y, p.shield_share)
 
 
+## Middle mouse: fires the special weapon if it has ammo and is not cooling down.
 func fire_special() -> void:
-	# Special weapons arrive with the tech tree (Milestone 4).
-	_emit(EV_SPECIAL, player.x, player.y, 0.0)
+	var p := player
+	var s := p.special
+	if s == null or not p.alive or state != STATE_PLAYING:
+		_emit(EV_SPECIAL, p.x, p.y, -1.0)
+		return
+	if s.cooldown > 0.0:
+		return
+	if s.ammo <= 0:
+		_emit(EV_SPECIAL, p.x, p.y, 0.0)
+		return
+	s.ammo -= 1
+	s.cooldown = s.cooldown_time
+	_emit(EV_SPECIAL, p.x, p.y, 1.0)
+	if s.shockwave:
+		# Wipe every enemy bullet and hit every enemy on screen.
+		ebul.clear()
+		for e in enemies:
+			if e.alive and e.y > -HALF_H - e.radius:
+				_damage_enemy(e, s.shockwave_damage, s.dtype)
+		_emit(EV_SHOCKWAVE, p.x, p.y, 70.0)
+		return
+	# Homing volleys spread over the nearest enemies, one target each where possible.
+	var targets: Array = []
+	if s.homing > 0.0:
+		for e in enemies:
+			if e.alive and e.y > -HALF_H:
+				targets.append([(e.x - p.x) * (e.x - p.x) + (e.y - p.y) * (e.y - p.y), e.slot])
+		targets.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	var n := s.volley
+	for k in n:
+		var sx := p.x
+		var sy := p.y
+		var vx := 0.0
+		var vy := 0.0
+		if s.behind:
+			sx += (k - (n - 1) * 0.5) * s.spacing
+			sy += 3.0
+			vy = s.drift
+		else:
+			var ang := 0.0
+			if n > 1:
+				ang = s.spread * (float(k) / float(n - 1) - 0.5)
+			sy -= 3.0
+			vx = sin(ang) * s.speed
+			vy = -cos(ang) * s.speed
+		var i := pbul.spawn(sx, sy, vx, vy, s.radius, s.damage, s.dtype, s.kind, s.lifetime, 0)
+		if i < 0:
+			break
+		var tslot := -1
+		var tuid := 0
+		if not targets.is_empty():
+			tslot = targets[k % targets.size()][1]
+			tuid = enemies[tslot].uid
+		pbul.set_extra(i, s.splash, s.homing, s.wander, s.fuse if s.fuse > 0.0 else -1.0, s.proximity, s.burst, tslot, tuid)
+		pbul.has_extra[i] = 2   # special: not counted for accuracy
 
 
 func step(dt: float) -> void:
@@ -380,11 +488,12 @@ func _step_player(dt: float) -> void:
 		p.shield = minf(p.shield_max, p.shield + shield_recharge_rate() * dt)
 	p.pool = minf(p.pool_max, p.pool + p.reactor_output * weapon_share * dt)
 
-	var n := p.weapons.size()
-	if n > 0:
+	if p.weapons[0] != null:
 		_step_weapon(p.weapons[0], in_fire_1 or stress, 0, weapon_share, dt)
-	if n > 1:
+	if p.weapons[1] != null:
 		_step_weapon(p.weapons[1], in_fire_2 or stress, 1, weapon_share, dt)
+	if p.special != null and p.special.cooldown > 0.0:
+		p.special.cooldown -= dt
 
 
 ## Shield points per second at the current split.
@@ -403,6 +512,12 @@ func _step_weapon(w: WeaponState, firing: bool, slot: int, weapon_share: float, 
 		w.overheated = false
 	if w.cooldown > 0.0:
 		w.cooldown -= dt
+	if w.behaviour == WeaponState.BEAM:
+		_step_beam(w, firing and not w.overheated, slot, weapon_share, dt)
+		return
+	if w.behaviour == WeaponState.RAIL:
+		_step_rail(w, firing and not w.overheated, slot, weapon_share, dt)
+		return
 	if not firing or w.overheated:
 		if w.cooldown < 0.0:
 			w.cooldown = 0.0
@@ -423,12 +538,17 @@ func _step_weapon(w: WeaponState, firing: bool, slot: int, weapon_share: float, 
 		var count := w.projectiles
 		for k in count:
 			var angle := 0.0
+			var offset := 0.0
 			if count > 1:
-				angle = w.spread * (float(k) / float(count - 1) - 0.5)
+				var f := float(k) / float(count - 1) - 0.5
+				angle = w.spread * f
+				offset = w.spacing * f * float(count - 1)
 			if w.random_spread > 0.0:
 				angle += _rng.randf_range(-0.5, 0.5) * w.random_spread
-			pbul.spawn(p.x + w.muzzle_x, p.y + w.muzzle_y, sin(angle) * w.speed, -cos(angle) * w.speed,
+			var i := pbul.spawn(p.x + w.muzzle_x + offset, p.y + w.muzzle_y, sin(angle) * w.speed, -cos(angle) * w.speed,
 					w.radius, dmg, w.dtype, w.kind, w.lifetime, w.pierce)
+			if i >= 0 and w.splash > 0.0:
+				pbul.set_extra(i, w.splash, 0.0, 0.0, -1.0, 0.0, -1, -1, 0)
 			shots_fired += 1
 		_emit(EV_SHOT, p.x + w.muzzle_x, p.y + w.muzzle_y, slot)
 
@@ -441,6 +561,117 @@ func _step_weapon(w: WeaponState, firing: bool, slot: int, weapon_share: float, 
 
 
 ## Applies damage to the player: shield first (with bleed-through and reflection), then armor.
+## Continuous beam. Damage and energy are per second. A sweeping beam (phaser) swings
+## from side to side; `pierce` is how many enemies it passes through before stopping.
+func _step_beam(w: WeaponState, firing: bool, slot: int, weapon_share: float, dt: float) -> void:
+	var p := player
+	if not firing:
+		w.beam_on = false
+		return
+	var mult := 1.0
+	var need := w.energy_per_shot * dt
+	if p.pool >= need:
+		p.pool -= need
+		w.starved = false
+	else:
+		p.pool = 0.0
+		w.starved = true
+		mult = _starved_mult
+	w.sweep_t += dt * w.sweep_speed
+	var ang := w.sweep * sin(w.sweep_t)
+	var ox := p.x + w.muzzle_x
+	var oy := p.y + w.muzzle_y
+	var dx := sin(ang)
+	var dy := -cos(ang)
+	# The beam ends at the top of the playfield or at its range.
+	var reach := minf(w.beam_range, (oy + HALF_H + 4.0) / maxf(-dy, 0.05))
+	var hits := _line_hits(ox, oy, dx, dy, reach, w.beam_width * 0.5)
+	var dmg := w.current_damage(weapon_share) * mult * dt
+	var limit := mini(hits.size(), w.pierce + 1)
+	for k in limit:
+		_damage_enemy(enemies[hits[k][1]], dmg, w.dtype)
+	w.beam_len = reach
+	if hits.size() > w.pierce:
+		w.beam_len = hits[w.pierce][0]
+	w.beam_on = true
+	w.beam_angle = ang
+	w.hit_timer -= dt
+	if limit > 0 and w.hit_timer <= 0.0:
+		w.hit_timer = 0.05
+		_emit(EV_HIT, ox + dx * w.beam_len, oy + dy * w.beam_len, w.dtype)
+	w.sound_timer -= dt
+	if w.sound_timer <= 0.0:
+		w.sound_timer = 0.13
+		_emit(EV_SHOT, ox, oy, slot)
+	# Accuracy: every 0.1 s of beam counts as one shot, a hit if it touched anything.
+	w.accuracy_hit = w.accuracy_hit or limit > 0
+	w.accuracy_timer += dt
+	if w.accuracy_timer >= 0.1:
+		w.accuracy_timer -= 0.1
+		shots_fired += 1
+		if w.accuracy_hit:
+			shots_hit += 1
+		w.accuracy_hit = false
+
+
+## Railgun: hold to charge, then an instant straight shot hits up to pierce + 1 enemies in a line.
+func _step_rail(w: WeaponState, firing: bool, slot: int, weapon_share: float, dt: float) -> void:
+	var p := player
+	if not firing:
+		w.charge = maxf(0.0, w.charge - dt * 2.0)
+		return
+	w.charge = minf(w.charge + dt, w.charge_time)
+	if w.charge < w.charge_time or w.cooldown > 0.0:
+		return
+	var rate := w.current_rate(weapon_share)
+	if p.pool >= w.energy_per_shot:
+		p.pool -= w.energy_per_shot
+		w.starved = false
+	else:
+		rate *= _starved_mult
+		w.starved = true
+	w.cooldown = 1.0 / maxf(rate, 0.01)
+	w.charge = 0.0
+	var ox := p.x + w.muzzle_x
+	var oy := p.y + w.muzzle_y
+	var reach := oy + HALF_H + 4.0
+	var hits := _line_hits(ox, oy, 0.0, -1.0, reach, w.beam_width * 0.5)
+	var limit := mini(hits.size(), w.pierce + 1)
+	var dmg := w.current_damage(weapon_share)
+	for k in limit:
+		var e := enemies[hits[k][1]]
+		_emit(EV_HIT, e.x, e.y + e.radius * 0.5, w.dtype)
+		_damage_enemy(e, dmg, w.dtype)
+	var length := reach
+	if hits.size() > w.pierce:
+		length = hits[w.pierce][0]
+	shots_fired += 1
+	if limit > 0:
+		shots_hit += 1
+	_emit(EV_RAIL, ox, oy, length)
+	_emit(EV_SHOT, ox, oy, slot)
+
+
+## Enemies touched by a line from (ox, oy) along the unit direction (dx, dy), nearest first,
+## as [distance along the line, slot] pairs. half_width widens the line.
+func _line_hits(ox: float, oy: float, dx: float, dy: float, reach: float, half_width: float) -> Array:
+	_beam_hits.clear()
+	for e in enemies:
+		if not e.alive:
+			continue
+		var rx := e.x - ox
+		var ry := e.y - oy
+		var along := rx * dx + ry * dy
+		if along < -e.radius or along > reach + e.radius:
+			continue
+		var side := absf(rx * dy - ry * dx)
+		if side <= e.radius + half_width:
+			_beam_hits.append([maxf(along - e.radius * 0.5, 0.0), e.slot])
+	if _beam_hits.size() > 1:
+		_beam_hits.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	return _beam_hits
+
+
 func damage_player(amount: float, dtype: int, from_slot: int = -1) -> void:
 	var p := player
 	if not p.alive or invincible or stress or p.invulnerable > 0.0:
@@ -457,8 +688,9 @@ func damage_player(amount: float, dtype: int, from_slot: int = -1) -> void:
 			_reflect(absorbed * p.shield_reflect, dtype, from_slot)
 	p.shield_timer = p.shield_delay
 	if to_hull > 0.0:
-		var dealt := to_hull * (1.0 - p.resist[dtype])
+		var dealt := minf(to_hull * (1.0 - p.resist[dtype]), p.armor)
 		p.armor -= dealt
+		hull_damage_taken += dealt
 		_emit(EV_HULL_HIT, p.x, p.y, dealt)
 		if p.armor <= 0.0:
 			p.armor = 0.0
@@ -497,7 +729,7 @@ func spawn_enemy(type: EnemyType, sx: float, move_override: MovePattern = null) 
 	e.alive = true
 	e.type = type
 	e.move = move_override if move_override != null else type.move
-	e.max_hp = type.hp * _hp_scale
+	e.max_hp = type.hp * _hp_scale * _d_hp
 	e.hp = e.max_hp
 	e.radius = type.radius
 	e.spawn_x = sx
@@ -512,6 +744,8 @@ func spawn_enemy(type: EnemyType, sx: float, move_override: MovePattern = null) 
 	e.phase_t = 0.0
 	e.path_i = 0
 	e.hit_time = -10.0
+	e.is_boss = false
+	e.spawn_time = level_time
 	for k in type.attacks.size():
 		e.attack_cd[k] = type.attacks[k].first_delay
 		e.attack_angle[k] = PI * 0.5
@@ -546,7 +780,12 @@ func _step_spawner(dt: float) -> void:
 		scroll_speed = move_toward(scroll_speed, _scroll_target, maxf(absf(_scroll_target - scroll_speed), 2.0) * dt)
 	while _spawn_ptr < _spawns.size() and _spawns[_spawn_ptr][0] <= level_time:
 		var s: Array = _spawns[_spawn_ptr]
-		spawn_enemy(s[1], s[2], s[3])
+		var e := spawn_enemy(s[1], s[2], s[3])
+		if e != null:
+			spawned_total += 1
+			if s[4]:
+				e.is_boss = true
+				boss_spawned = true
 		_spawn_ptr += 1
 	if _loop:
 		if level_time >= _loop_length:
@@ -665,9 +904,9 @@ func _step_enemies(dt: float) -> void:
 						if e.burst_left[k] <= 0:
 							e.burst_left[k] = a.burst
 						e.burst_left[k] -= 1
-						cd += a.burst_interval if e.burst_left[k] > 0 else a.interval
+						cd += a.burst_interval if e.burst_left[k] > 0 else a.interval / _d_fire_rate
 					else:
-						cd += a.interval
+						cd += a.interval / _d_fire_rate
 				e.attack_cd[k] = cd
 
 		# Body collision with the player
@@ -676,7 +915,7 @@ func _step_enemies(dt: float) -> void:
 			var dy := e.y - p.y
 			var rr := e.radius + p.radius
 			if dx * dx + dy * dy <= rr * rr:
-				damage_player(t.collision_damage, 1, e.slot)
+				damage_player(t.collision_damage * _d_damage, 1, e.slot)
 				_damage_enemy(e, p.ram_damage, 1)
 				if not e.alive:
 					continue
@@ -715,16 +954,116 @@ func _enemy_fire(e: Enemy, a: AttackPattern, k: int) -> void:
 		# Stress test: every shot becomes a full ring.
 		count = 10
 		step = TAU / 10.0
+	var spd := a.bullet_speed * _d_bullet_speed
+	var dmg := a.damage * _d_damage
 	for i in count:
 		var ang := base + step * i
-		ebul.spawn(e.x, e.y, cos(ang) * a.bullet_speed, sin(ang) * a.bullet_speed,
-				a.bullet_radius, a.damage, a.dtype, a.bullet_kind, 8.0, e.slot)
+		ebul.spawn(e.x, e.y, cos(ang) * spd, sin(ang) * spd, a.bullet_radius, dmg, a.dtype, a.bullet_kind, 8.0, e.slot)
+
+
+## A weapon explosion: damages every enemy within radius of (x, y).
+func _explode(x: float, y: float, radius: float, dmg: float, dtype: int) -> void:
+	for e in enemies:
+		if not e.alive:
+			continue
+		var dx := e.x - x
+		var dy := e.y - y
+		var rr := radius + e.radius
+		if dx * dx + dy * dy <= rr * rr:
+			_damage_enemy(e, dmg, dtype)
+	_emit(EV_SPLASH, x, y, radius)
+
+
+## A bullet with extras goes off: a cluster burst (spawned after the bullet loop) or an explosion.
+## `struck` is the enemy it hit, if any; bomblets do not hit that one again straight away.
+func _detonate(i: int, struck: int = -1) -> void:
+	var b := pbul
+	if b.burst[i] >= 0:
+		_pending_bursts.append(b.x[i])
+		_pending_bursts.append(b.y[i])
+		_pending_bursts.append(b.burst[i])
+		_pending_bursts.append(struck)
+	# The shell itself explodes too (a cluster bomb's casing as well as its bomblets).
+	if b.splash[i] > 0.0:
+		_explode(b.x[i], b.y[i], b.splash[i], b.damage[i], b.dtype[i])
+
+
+func _spawn_pending_bursts() -> void:
+	var n := _pending_bursts.size() / 4
+	for k in n:
+		var bx := _pending_bursts[k * 4]
+		var by := _pending_bursts[k * 4 + 1]
+		var d: Dictionary = _bursts[int(_pending_bursts[k * 4 + 2])]
+		var struck := int(_pending_bursts[k * 4 + 3])
+		var count: int = d["count"]
+		for j in count:
+			var ang := TAU * (float(j) + _rng.randf()) / float(count)
+			var sp: float = d["speed"] * _rng.randf_range(0.6, 1.0)
+			var i := pbul.spawn(bx, by, cos(ang) * sp, sin(ang) * sp, 1.0, d["damage"], 2, d["kind"], d["lifetime"] + 0.5, 0)
+			if i < 0:
+				break
+			pbul.set_extra(i, d["splash"], 0.0, 0.0, d["lifetime"] * _rng.randf_range(0.8, 1.0), 0.0, -1, -1, 0)
+			pbul.has_extra[i] = 2
+			pbul.last_hit[i] = struck
+	_pending_bursts.clear()
+
+
+## Steering, fuses and proximity triggers for bullets with extras. Returns true if it went off.
+func _step_extra(i: int, dt: float) -> bool:
+	var b := pbul
+	if b.turn[i] > 0.0:
+		var slot := b.target[i]
+		if slot < 0 or not enemies[slot].alive or enemies[slot].uid != b.target_uid[i]:
+			slot = -1
+			var best := INF
+			for e in enemies:
+				if e.alive and e.y > -HALF_H:
+					var d := (e.x - b.x[i]) * (e.x - b.x[i]) + (e.y - b.y[i]) * (e.y - b.y[i])
+					if d < best:
+						best = d
+						slot = e.slot
+			b.target[i] = slot
+			if slot >= 0:
+				b.target_uid[i] = enemies[slot].uid
+		if slot >= 0:
+			var e := enemies[slot]
+			var cur := atan2(b.vy[i], b.vx[i])
+			var want := atan2(e.y - b.y[i], e.x - b.x[i])
+			var diff := wrapf(want - cur, -PI, PI)
+			var turn := clampf(diff, -b.turn[i] * dt, b.turn[i] * dt)
+			var sp := sqrt(b.vx[i] * b.vx[i] + b.vy[i] * b.vy[i])
+			b.vx[i] = cos(cur + turn) * sp
+			b.vy[i] = sin(cur + turn) * sp
+	if b.wander[i] > 0.0:
+		var a := atan2(b.vy[i], b.vx[i]) + _rng.randf_range(-1.0, 1.0) * b.wander[i] * dt
+		var sp2 := sqrt(b.vx[i] * b.vx[i] + b.vy[i] * b.vy[i])
+		b.vx[i] = cos(a) * sp2
+		b.vy[i] = sin(a) * sp2
+	if b.fuse[i] >= 0.0:
+		b.fuse[i] -= dt
+		if b.fuse[i] <= 0.0:
+			_detonate(i)
+			return true
+	if b.prox[i] > 0.0:
+		var r := b.prox[i]
+		for e in enemies:
+			if e.alive:
+				var dx := e.x - b.x[i]
+				var dy := e.y - b.y[i]
+				var rr := r + e.radius
+				if dx * dx + dy * dy <= rr * rr:
+					_detonate(i)
+					return true
+	return false
 
 
 func _damage_enemy(e: Enemy, amount: float, dtype: int) -> void:
 	e.hp -= amount * (1.0 - e.type.resist[dtype])
 	e.hit_time = time
-	if e.hp <= 0.0:
+	if e.hp <= 0.0 and e.alive:
+		if e.is_boss:
+			boss_killed = true
+			boss_kill_time = level_time - e.spawn_time
 		kills += 1
 		score += e.type.credits * 10
 		credits += e.type.credits
@@ -746,6 +1085,7 @@ func _step_player_bullets(dt: float) -> void:
 	var bdtype := b.dtype
 	var bpierce := b.pierce
 	var blast := b.last_hit
+	var bextra := b.has_extra
 	var cols := _col_count
 	var items := _col_items
 	var inv_col := 1.0 / COL_W
@@ -762,6 +1102,8 @@ func _step_player_bullets(dt: float) -> void:
 		var l := blife[i] - dt
 		blife[i] = l
 		var dead := l <= 0.0 or ny < y_min or ny > y_max or nx < -x_max or nx > x_max
+		if not dead and bextra[i] != 0:
+			dead = _step_extra(i, dt)
 		if not dead:
 			var c := int((nx - COL_X0) * inv_col)
 			if c >= 0 and c < NCOL:
@@ -780,8 +1122,13 @@ func _step_player_bullets(dt: float) -> void:
 						var ddy := e.y - ny
 						var rr := e.radius + r
 						if ddx * ddx + ddy * ddy <= rr * rr:
-							shots_hit += 1
+							if bextra[i] != 2 and blast[i] == -1:
+								shots_hit += 1
 							_emit(EV_HIT, nx, ny, bdtype[i])
+							if bextra[i] != 0 and (b.splash[i] > 0.0 or b.burst[i] >= 0):
+								_detonate(i, slot)
+								dead = true
+								break
 							_damage_enemy(e, bdmg[i], bdtype[i])
 							if bpierce[i] > 0:
 								bpierce[i] -= 1
@@ -794,6 +1141,8 @@ func _step_player_bullets(dt: float) -> void:
 			n -= 1
 		else:
 			i += 1
+	if not _pending_bursts.is_empty():
+		_spawn_pending_bursts()
 
 
 func _step_enemy_bullets(dt: float) -> void:

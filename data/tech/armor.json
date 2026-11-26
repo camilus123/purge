@@ -1,6 +1,179 @@
 {
+  "_comment": "Hull plating. Heavy and Reactive are mutually exclusive branches.",
   "items": [
-    { "id": "armor.standard.t1", "name": "Standard Plating I", "category": "armor", "branch": "standard", "tier": 1, "cost": 0,
-      "hp": 100, "resist": { "energy": 0.0, "kinetic": 0.0, "explosive": 0.0 }, "speed_mult": 1.0 }
+    {
+      "id": "armor.standard.t1",
+      "name": "Standard Plating",
+      "description": "Basic hull plating. Armor never regenerates during a stage; repair it in the shop.",
+      "category": "armor",
+      "branch": "standard",
+      "tier": 1,
+      "cost": 0,
+      "hp": 100,
+      "resist": {
+        "energy": 0.0,
+        "kinetic": 0.0,
+        "explosive": 0.0
+      },
+      "speed_mult": 1.0
+    },
+    {
+      "id": "armor.heavy.t2",
+      "name": "Heavy Plating I",
+      "description": "Heavy branch: the most hit points, but the extra mass slows the ship a little.",
+      "category": "armor",
+      "branch": "heavy",
+      "tier": 2,
+      "cost": 1200,
+      "requires": [
+        "armor.standard.t1"
+      ],
+      "hp": 160,
+      "resist": {
+        "energy": 0.0,
+        "kinetic": 0.05,
+        "explosive": 0.05
+      },
+      "speed_mult": 0.95,
+      "excludes": [
+        "armor.reactive.t2"
+      ]
+    },
+    {
+      "id": "armor.heavy.t3",
+      "name": "Heavy Plating II",
+      "description": "Heavy branch: the most hit points, but the extra mass slows the ship a little.",
+      "category": "armor",
+      "branch": "heavy",
+      "tier": 3,
+      "cost": 2600,
+      "requires": [
+        "armor.heavy.t2"
+      ],
+      "hp": 230,
+      "resist": {
+        "energy": 0.0,
+        "kinetic": 0.1,
+        "explosive": 0.1
+      },
+      "speed_mult": 0.92
+    },
+    {
+      "id": "armor.heavy.t4",
+      "name": "Heavy Plating III",
+      "description": "Heavy branch: the most hit points, but the extra mass slows the ship a little.",
+      "category": "armor",
+      "branch": "heavy",
+      "tier": 4,
+      "cost": 4500,
+      "requires": [
+        "armor.heavy.t3"
+      ],
+      "hp": 310,
+      "resist": {
+        "energy": 0.0,
+        "kinetic": 0.12,
+        "explosive": 0.12
+      },
+      "speed_mult": 0.9
+    },
+    {
+      "id": "armor.heavy.t5",
+      "name": "Heavy Plating IV",
+      "description": "Heavy branch: the most hit points, but the extra mass slows the ship a little.",
+      "category": "armor",
+      "branch": "heavy",
+      "tier": 5,
+      "cost": 7000,
+      "requires": [
+        "armor.heavy.t4"
+      ],
+      "hp": 400,
+      "resist": {
+        "energy": 0.0,
+        "kinetic": 0.15,
+        "explosive": 0.15
+      },
+      "speed_mult": 0.88
+    },
+    {
+      "id": "armor.reactive.t2",
+      "name": "Reactive Plating I",
+      "description": "Reactive branch: fewer hit points, but strong resistance to kinetic and explosive damage.",
+      "category": "armor",
+      "branch": "reactive",
+      "tier": 2,
+      "cost": 1400,
+      "requires": [
+        "armor.standard.t1"
+      ],
+      "hp": 130,
+      "resist": {
+        "energy": 0.0,
+        "kinetic": 0.2,
+        "explosive": 0.25
+      },
+      "speed_mult": 1.0,
+      "excludes": [
+        "armor.heavy.t2"
+      ]
+    },
+    {
+      "id": "armor.reactive.t3",
+      "name": "Reactive Plating II",
+      "description": "Reactive branch: fewer hit points, but strong resistance to kinetic and explosive damage.",
+      "category": "armor",
+      "branch": "reactive",
+      "tier": 3,
+      "cost": 2900,
+      "requires": [
+        "armor.reactive.t2"
+      ],
+      "hp": 165,
+      "resist": {
+        "energy": 0.0,
+        "kinetic": 0.3,
+        "explosive": 0.35
+      },
+      "speed_mult": 1.0
+    },
+    {
+      "id": "armor.reactive.t4",
+      "name": "Reactive Plating III",
+      "description": "Reactive branch: fewer hit points, but strong resistance to kinetic and explosive damage.",
+      "category": "armor",
+      "branch": "reactive",
+      "tier": 4,
+      "cost": 4800,
+      "requires": [
+        "armor.reactive.t3"
+      ],
+      "hp": 200,
+      "resist": {
+        "energy": 0.0,
+        "kinetic": 0.38,
+        "explosive": 0.45
+      },
+      "speed_mult": 1.0
+    },
+    {
+      "id": "armor.reactive.t5",
+      "name": "Reactive Plating IV",
+      "description": "Reactive branch: fewer hit points, but strong resistance to kinetic and explosive damage.",
+      "category": "armor",
+      "branch": "reactive",
+      "tier": 5,
+      "cost": 7400,
+      "requires": [
+        "armor.reactive.t4"
+      ],
+      "hp": 240,
+      "resist": {
+        "energy": 0.0,
+        "kinetic": 0.45,
+        "explosive": 0.55
+      },
+      "speed_mult": 1.0
+    }
   ]
 }

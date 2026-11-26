@@ -31,6 +31,23 @@ func _ready() -> void:
 		return (sin(t * TAU * 330.0) + sin(t * TAU * 495.0) * 0.5 + n * 0.2) * exp(-t * 26.0) * 0.5)
 	_streams["hull"] = _make(0.2, 0.4, func(t: float, n: float) -> float:
 		return (n + sin(t * TAU * 90.0)) * exp(-t * 20.0) * 0.8)
+	_streams["particle"] = _make(0.09, 1.0, func(t: float, n: float) -> float:
+		return (sin(t * TAU * lerpf(900.0, 1800.0, t / 0.09)) * 0.5 + n * 0.25) * exp(-t * 35.0))
+	_streams["beam"] = _make(0.14, 1.0, func(t: float, n: float) -> float:
+		return (sin(t * TAU * 220.0) * 0.5 + sin(t * TAU * 331.0) * 0.3 + n * 0.1) * sin(t / 0.14 * PI))
+	_streams["rail"] = _make(0.35, 1.0, func(t: float, n: float) -> float:
+		return (n * exp(-t * 40.0) + sin(t * TAU * lerpf(2400.0, 300.0, minf(t / 0.08, 1.0))) * exp(-t * 12.0)) * 0.7)
+	_streams["cannon"] = _make(0.22, 0.3, func(t: float, n: float) -> float:
+		return (n * 0.8 + sin(t * TAU * 70.0)) * exp(-t * 22.0))
+	_streams["missile"] = _make(0.3, 0.5, func(t: float, n: float) -> float:
+		return n * (1.0 - exp(-t * 60.0)) * exp(-t * 9.0) * 0.8)
+	_streams["empty"] = _make(0.08, 1.0, func(t: float, _n: float) -> float:
+		return signf(sin(t * TAU * 180.0)) * 0.3 * exp(-t * 30.0))
+	_streams["shockwave"] = _make(0.9, 0.2, func(t: float, n: float) -> float:
+		return (n + sin(t * TAU * lerpf(90.0, 30.0, t))) * exp(-t * 4.0) * 0.9)
+	_streams["buy"] = _make(0.18, 1.0, func(t: float, _n: float) -> float:
+		var f := 880.0 if t < 0.07 else 1320.0
+		return sin(t * TAU * f) * exp(-fmod(t, 0.07) * 25.0) * 0.5)
 
 
 ## Builds a 16-bit mono sample from f(time, white_noise). `lowpass` < 1 smooths the result.

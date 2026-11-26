@@ -1,12 +1,40 @@
 {
-  "_comment": "Milestone 2 only uses starting_loadout. The full economy arrives in Milestone 4.",
+  "_comment": "Credits. Sell refunds: full refund in the same shop visit, otherwise sell_refund of the cost.",
   "starting_credits": 3000,
   "sell_refund": 0.75,
+  "repair_cost_per_hp": 3,
+  "unlock_all_sets": false,
   "starting_loadout": {
-    "reactor": "reactor.basic.t1",
-    "shield": "shield.bulwark.t1",
+    "reactor": "reactor.core.t1",
     "armor": "armor.standard.t1",
-    "weapon1": "weapon.laser.t1",
-    "weapon2": "weapon.chaingun.t1"
+    "weapon1": "weapon.laser.t1"
+  },
+  "results": {
+    "kill_percent_bonus": [
+      [
+        50,
+        100
+      ],
+      [
+        75,
+        250
+      ],
+      [
+        90,
+        500
+      ],
+      [
+        100,
+        1000
+      ]
+    ],
+    "accuracy_bonus_max": 500,
+    "accuracy_bonus_min_accuracy": 0.2,
+    "hull_bonus_max": 400,
+    "no_hull_damage_bonus": 500,
+    "boss_kill_bonus": 1500,
+    "boss_time_bonus_per_second": 25,
+    "pickup_credit_mult": 1.0,
+    "secret_bonus": 500
   }
 }
