@@ -2,6 +2,7 @@
   "_comment": "Milestone 2 test range. A looping list of waves; each loop multiplies enemy health. Replaced by real level timelines in Milestone 3.",
   "name": "Test Range",
   "scroll_speed": 12,
+  "background": { "type": "terrain", "theme": "frontier", "ground_speed_scale": 2.5, "corruption": 0.0 },
   "loop_length": 34,
   "hp_scale_per_loop": 1.25,
   "waves": [

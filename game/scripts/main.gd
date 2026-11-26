@@ -53,6 +53,7 @@ var _shot_delay: float = 6.0
 var _elapsed: float = 0.0
 var _force_windowed: bool = false
 var _last_usec: int = 0
+var _mouse_reapply: int = 41   # frames; re-applies at 40, 30, 20, 10 and 0
 var _no_save: bool = false   # command-line overrides must not end up in the saved settings
 
 
@@ -269,6 +270,8 @@ func _quit() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and sim != null and not _demo:
 		_set_paused(true)
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN and sim != null and not paused:
+		_mouse_reapply = 3
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_quit()
 
@@ -380,6 +383,13 @@ func _process(delta: float) -> void:
 		_prev_stats[4] = _gap_b / 1000.0
 
 	_elapsed += delta
+	# The OS can ignore a cursor capture requested before the window is fully up or focused,
+	# so the mouse mode is applied again shortly after start and after regaining focus.
+	if _mouse_reapply > 0:
+		_mouse_reapply -= 1
+		if _mouse_reapply % 10 == 0 and not paused and not _demo:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			_update_mouse_mode()
 	if _bench:
 		_run_bench(frame_ms)
 	_proc_end_usec = Time.get_ticks_usec()

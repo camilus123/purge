@@ -92,3 +92,22 @@ with a 240 cap, tick/frame alignment) before bosses arrive in Milestone 5.
   it back along its velocity for render interpolation.
 - Tests live in `game/tests/` (they must be inside the Godot project to run); `tools/test.ps1` runs them.
 - Command-line switches (`--windowed`, `--set=key=value`, `--bench`) never write to the saved settings.
+
+## 2026-11-26: Owner feedback after Milestone 2
+
+- Controls and the build "work good"; go-ahead to continue past Milestone 2.
+- **Stage look (design change):** at least some stages fly low over the planet surface, close enough
+  to see the ground. Set 1: buildings, roads, grasslands. Set 2: the same kind of world visibly
+  infested (buildings, roads, forests overgrown by the swarm). Set 3: like the normal world but red,
+  cracked and with flowing lava. Orbital backgrounds remain an option for other stages.
+- Implemented as a level background type: `"background": { "type": "terrain" | "orbit", ... }` in the
+  level file. The terrain type is a procedural ground shader plus streamed 3D buildings; a
+  `corruption` value is reserved for the infested and burning variants.
+- Bug fixed: the mouse cursor stayed visible at startup until the pause menu was opened and closed.
+  The capture is now re-applied during the first frames and when the window regains focus.
+- **Performance finding:** with the terrain background the release build runs the stress scene
+  (60 enemies, about 500 bullets, 3440x1440, Direct3D 12) at about 1300 fps average with a 1% low of
+  about 745 fps and no frame over 4.6 ms. The long frames seen in Milestone 2 therefore came from the
+  orbital background (procedural planet and starfield shaders), not from gameplay. The orbital
+  background must be made cheaper (for example by baking the planet to a texture) before it is used
+  in a real stage.

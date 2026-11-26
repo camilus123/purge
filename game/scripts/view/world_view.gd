@@ -46,6 +46,7 @@ var _fx_mat: ShaderMaterial
 var _stars_mat: ShaderMaterial
 var _planet: MeshInstance3D
 var _planet_mat: ShaderMaterial
+var _terrain: TerrainBackground
 
 var _enemy_nodes: Array[MeshInstance3D] = []
 var _enemy_uid: PackedInt32Array
@@ -137,6 +138,11 @@ func _build_camera() -> void:
 
 
 func _build_background() -> void:
+	if String(sim.background.get("type", "orbit")) == "terrain":
+		_terrain = TerrainBackground.new()
+		add_child(_terrain)
+		_terrain.setup(sim.background)
+		return
 	var stars := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(800, 1000)
@@ -371,12 +377,15 @@ func render(alpha: float, frame_dt: float, tick_dt: float, running: bool) -> voi
 	_update_fx(frame_dt if running else 0.0)
 
 	# Background
-	_stars_mat.set_shader_parameter("scroll", sim.scroll)
-	var cycle := 700.0
-	var pz := fposmod(sim.scroll * 0.35 + 250.0, cycle) - cycle * 0.5
-	_planet.position = Vector3(-70.0, -190.0, pz - 30.0)
-	_planet_mat.set_shader_parameter("spin", sim.time * 0.006)
-	_planet_mat.set_shader_parameter("cloud_shift", sim.time * 0.004)
+	if _terrain != null:
+		_terrain.update(sim.scroll)
+	else:
+		_stars_mat.set_shader_parameter("scroll", sim.scroll)
+		var cycle := 700.0
+		var pz := fposmod(sim.scroll * 0.35 + 250.0, cycle) - cycle * 0.5
+		_planet.position = Vector3(-70.0, -190.0, pz - 30.0)
+		_planet_mat.set_shader_parameter("spin", sim.time * 0.006)
+		_planet_mat.set_shader_parameter("cloud_shift", sim.time * 0.004)
 
 	# Screen shake
 	var shake_amount: float = _shake * _shake * 1.6 * float(Settings.values["screen_shake"])
