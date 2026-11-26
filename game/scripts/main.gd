@@ -53,7 +53,8 @@ var _shot_delay: float = 6.0
 var _elapsed: float = 0.0
 var _force_windowed: bool = false
 var _last_usec: int = 0
-var _mouse_fix_times: Array[float] = [0.2, 0.5, 1.0, 2.0, 4.0]   # seconds after start at which the cursor capture is re-applied
+var _mouse_reassert: float = 0.2   # seconds until the cursor capture is asserted again
+var _blank_cursor: ImageTexture
 var _banner: Label
 var _banner_time: float = 0.0
 var _next_after: float = 0.0   # test switch: go to the next level after this many seconds
@@ -346,6 +347,15 @@ func _on_shield_selected(shield_id: String) -> void:
 
 
 func _update_mouse_mode() -> void:
+	# Belt and braces: while playing, the pointer image itself is fully transparent, so even if
+	# Windows decides to draw the cursor (it can after a focus change) nothing is visible.
+	if _blank_cursor == null:
+		var img := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		_blank_cursor = ImageTexture.create_from_image(img)
+	var playing := not (paused or _demo)
+	for shape: Input.CursorShape in [Input.CURSOR_ARROW, Input.CURSOR_BUSY, Input.CURSOR_WAIT, Input.CURSOR_POINTING_HAND]:
+		Input.set_custom_mouse_cursor(_blank_cursor if playing else null, shape)
 	if paused or _demo:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif String(Settings.values["mouse_mode"]) == "absolute":
@@ -373,7 +383,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and sim != null and not _demo:
 		_set_paused(true)
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN and sim != null and not paused:
-		_mouse_fix_times = [_elapsed + 0.1, _elapsed + 0.5, _elapsed + 1.5]
+		_mouse_reassert = 0.1
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_quit()
 
@@ -498,11 +508,13 @@ func _process(delta: float) -> void:
 	_elapsed += delta
 	# The OS can ignore a cursor capture requested before the window is fully up or focused,
 	# so the mouse mode is applied again shortly after start and after regaining focus.
-	# (Timed in seconds: at several hundred fps a frame count would be over before the window settles.)
-	if not _mouse_fix_times.is_empty() and _elapsed >= _mouse_fix_times[0]:
-		_mouse_fix_times.pop_front()
+	# It is asserted again every second for as long as the game is being played; going through
+	# the hidden mode first forces the engine to hide the pointer again without ever showing it.
+	_mouse_reassert -= delta
+	if _mouse_reassert <= 0.0:
+		_mouse_reassert = 1.0
 		if not paused and not _demo:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 			_update_mouse_mode()
 	if _next_after > 0.0 and _elapsed >= _next_after:
 		_next_after = 0.0
