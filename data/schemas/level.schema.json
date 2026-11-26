@@ -55,6 +55,14 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "map_offset": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
         }
       },
       "required": [

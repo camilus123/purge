@@ -6,7 +6,11 @@
     "type": "terrain",
     "theme": "frontier",
     "ground_speed_scale": 2.5,
-    "corruption": 0.0
+    "corruption": 0.0,
+    "map_offset": [
+      0,
+      2400
+    ]
   },
   "loop": true,
   "loop_length": 34,

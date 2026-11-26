@@ -5,6 +5,7 @@ shader_type spatial;
 render_mode unshaded, shadows_disabled;
 
 uniform float scroll = 0.0;          // ground distance travelled
+uniform vec2 map_offset = vec2(0.0); // where on the endless map this level flies
 uniform float brightness = 0.62;     // kept low so bullets stay readable
 uniform vec3 grass_a : source_color = vec3(0.16, 0.33, 0.1);
 uniform vec3 grass_b : source_color = vec3(0.3, 0.42, 0.14);
@@ -49,7 +50,7 @@ float line_mask(float coord, float period, float half_width) {
 
 void vertex() {
 	vec3 world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	v_ground = vec2(world.x, world.z - scroll);
+	v_ground = vec2(world.x, world.z - scroll) + map_offset;
 }
 
 void fragment() {

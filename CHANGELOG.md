@@ -1,5 +1,11 @@
 # Changelog
 
+## Fixes after Milestone 3 feedback (2026-11-26)
+- Cursor capture is re-applied on a timer (0.2 to 4 seconds after start and after regaining focus);
+  the earlier frame-counted fix finished within a few milliseconds at high framerates.
+- Level changes are now obvious: a banner names the set, stage and level, and each level flies over
+  its own part of the map (`map_offset` in the level background).
+
 ## Milestone 3: Data systems (2026-11-26)
 - JSON Schemas for every data type in `data/schemas/`.
 - Data validator (`tools\validate.ps1`, and at startup in debug builds): schema checks, id

@@ -11,6 +11,7 @@ const ROWS := 32          # cells along the flight direction
 const TOP_Z := -128.0     # world z where new rows appear
 
 var ground_speed_scale: float = 1.0
+var _offset: Vector2 = Vector2.ZERO   # where on the endless map this level flies
 
 var _ground_mat: ShaderMaterial
 var _mm: MultiMesh
@@ -35,6 +36,9 @@ static func _cell_random(i: int, j: int, salt: int) -> float:
 
 func setup(config: Dictionary) -> void:
 	ground_speed_scale = config.get("ground_speed_scale", 2.5)
+	var off: Array = config.get("map_offset", [0, 0])
+	# Snapped to the building grid so the 3D buildings stay lined up with the painted blocks.
+	_offset = Vector2(snappedf(float(off[0]), 32.0), snappedf(float(off[1]), 32.0))
 	var ground := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(360, 420)
@@ -44,6 +48,7 @@ func setup(config: Dictionary) -> void:
 	_ground_mat = ShaderMaterial.new()
 	_ground_mat.shader = load("res://shaders/terrain.gdshader")
 	_ground_mat.set_shader_parameter("corruption_amount", float(config.get("corruption", 0.0)))
+	_ground_mat.set_shader_parameter("map_offset", _offset)
 	ground.material_override = _ground_mat
 	add_child(ground)
 
@@ -90,9 +95,9 @@ func _build_row(j: int) -> void:
 	for c in COLS:
 		var i := c - COLS / 2
 		var gx := (i + 0.5) * CELL
-		var u := urban(gx, gz)
+		var u := urban(gx + _offset.x, gz + _offset.y)
 		var t := Transform3D(Basis.from_scale(Vector3.ZERO), Vector3.ZERO)
-		if u > 0.78 and _cell_random(i, j, 1) > 0.18:
+		if u > 0.78 and _cell_random(i, j + int(_offset.y), 1) > 0.18:
 			# Taller towards the centre of a city.
 			var height := 2.5 + _cell_random(i, j, 2) * 5.0 + maxf(0.0, u - 0.95) * 22.0 * _cell_random(i, j, 3)
 			var w := 4.2 + _cell_random(i, j, 4) * 1.4
