@@ -10,6 +10,7 @@ const FX_MAX := 1536
 const STRIDE := 16         # MultiMesh floats per instance: 12 transform + 4 custom
 
 var sim: GameSim
+var show_player: bool = true   # false behind the menus
 var camera: Camera3D
 var environment: Environment
 
@@ -57,6 +58,9 @@ var _k_hit: int
 var _k_flash: int
 var _k_trail: int
 var _k_muzzle: int
+var _k_rail: int
+var _k_shock: int
+var _render_alpha: float = 1.0
 var _trail_acc: float = 0.0
 var _shake: float = 0.0
 var _cam_base: Vector3
@@ -200,6 +204,8 @@ func _build_sprites() -> void:
 	_k_flash = sim.kind_of("fx.flash")
 	_k_trail = sim.kind_of("fx.trail")
 	_k_muzzle = sim.kind_of("fx.muzzle")
+	_k_rail = sim.kind_of("proj.rail.trace")
+	_k_shock = sim.kind_of("fx.shockwave")
 
 	_add_mat = ShaderMaterial.new()
 	_add_mat.shader = load("res://shaders/sprite_add.gdshader")
@@ -300,6 +306,26 @@ func handle_event(type: int, ex: float, ey: float, value: float) -> void:
 		GameSim.EV_RESTART:
 			_fx_count = 0
 			_shake = 0.0
+		GameSim.EV_SPLASH:
+			_spawn_fx(_k_flash, ex, ey, 0.0, 0.0, 0.12, value * 1.6)
+			for i in 6:
+				var a := _rng.randf() * TAU
+				var sp := _rng.randf_range(10.0, 30.0 + value * 4.0)
+				_spawn_fx(_k_spark, ex, ey, cos(a) * sp, sin(a) * sp, 0.25, 1.0)
+			_shake = minf(1.0, _shake + 0.02 + value * 0.004)
+		GameSim.EV_RAIL:
+			# A bright trace along the shot that fades out quickly.
+			var d := 0.0
+			while d < value:
+				_spawn_fx(_k_rail, ex, ey - d - 2.0, 0.0, -0.01, 0.22, 1.0)
+				d += 4.0
+			_shake = minf(1.0, _shake + 0.12)
+		GameSim.EV_SHOCKWAVE:
+			_spawn_fx(_k_flash, ex, ey, 0.0, 0.0, 0.35, 40.0)
+			for i in 96:
+				var a := TAU * i / 96.0
+				_spawn_fx(_k_shock, ex, ey, cos(a) * 140.0, sin(a) * 140.0, 0.5, 1.6)
+			_shake = 1.0
 
 
 func _explode(ex: float, ey: float, radius: float) -> void:
@@ -338,7 +364,7 @@ func render(alpha: float, frame_dt: float, tick_dt: float, running: bool) -> voi
 	var py := lerpf(p.oy, p.y, alpha)
 	_ship_root.position = Vector3(px, 0.0, py)
 	var blink := p.invulnerable > 0.0 and fmod(p.invulnerable, 0.2) > 0.1
-	_ship_root.visible = p.alive
+	_ship_root.visible = p.alive and show_player
 	_ship.visible = not blink
 	_ship.rotation.z = lerpf(_ship.rotation.z, -clampf(p.vx / maxf(p.max_speed, 1.0), -1.0, 1.0) * 0.55,
 			minf(1.0, frame_dt * 14.0))
@@ -365,6 +391,7 @@ func render(alpha: float, frame_dt: float, tick_dt: float, running: bool) -> voi
 	_solid_mat.set_shader_parameter("lag", lag)
 	_fill_bullets(sim.pbul, _pb_mm, _pb_buf)
 	_fill_bullets(sim.ebul, _eb_mm, _eb_buf)
+	_render_alpha = alpha
 	_update_fx(frame_dt if running else 0.0)
 
 	# Background
@@ -523,5 +550,50 @@ func _update_fx(dt: float) -> void:
 		buf[o + 15] = vy
 		i += 1
 		o += STRIDE
+	var n := _append_beams(buf, _fx_count)
 	_fx_mm.buffer = buf
-	_fx_mm.visible_instance_count = _fx_count
+	_fx_mm.visible_instance_count = n
+
+
+## Continuous beams are drawn each frame as a row of overlapping glow sprites behind the
+## particle effects' entries in the same buffer. Returns the new instance count.
+func _append_beams(buf: PackedFloat32Array, start: int) -> int:
+	var p := sim.player
+	if not p.alive:
+		return start
+	var n := start
+	var px := lerpf(p.ox, p.x, _render_alpha)
+	var py := lerpf(p.oy, p.y, _render_alpha)
+	for w in p.weapons:
+		if w == null or not w.beam_on:
+			continue
+		var dx := sin(w.beam_angle)
+		var dy := -cos(w.beam_angle)
+		var ox := px + w.muzzle_x
+		var oy := py + w.muzzle_y
+		var d := 1.0
+		while d < w.beam_len and n < FX_MAX:
+			var o := n * STRIDE
+			buf[o] = 1.0
+			buf[o + 10] = 1.0
+			buf[o + 3] = ox + dx * d
+			buf[o + 11] = oy + dy * d
+			buf[o + 12] = w.beam_kind
+			buf[o + 13] = 0.85 + 0.15 * sin(sim.time * 60.0 + d)
+			buf[o + 14] = dx
+			buf[o + 15] = dy
+			n += 1
+			d += 3.5
+		if n < FX_MAX:
+			# Flare where the beam ends.
+			var o := n * STRIDE
+			buf[o] = 2.2
+			buf[o + 10] = 2.2
+			buf[o + 3] = ox + dx * w.beam_len
+			buf[o + 11] = oy + dy * w.beam_len
+			buf[o + 12] = _k_muzzle
+			buf[o + 13] = 1.0
+			buf[o + 14] = 0.0
+			buf[o + 15] = 0.0
+			n += 1
+	return n

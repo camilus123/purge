@@ -116,9 +116,9 @@ game/scripts/
 ## 7. Milestones
 
 1. Questions and plan (done 2026-11-26)
-2. Playable core
-3. Data systems
-4. Shop and tech tree
+2. Playable core (done 2026-11-26)
+3. Data systems (done 2026-11-26)
+4. Shop and tech tree (done 2026-11-26)
 5. Set 1 complete
 6. Set 2 complete
 7. Set 3 complete

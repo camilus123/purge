@@ -1,10 +1,21 @@
 extends Node
-## Game loop for the Milestone 2 playable core. Feeds input into the fixed-step
-## simulation, lets the view draw an interpolated frame, and lays out the screen:
-## a fixed-aspect playfield in the centre with HUD panels on both sides.
+## The game's top level. Owns the simulation, the 3D view, the HUD and every menu, and moves
+## between them: main menu -> shop -> stage -> results -> shop ... -> end screen.
+## The simulation runs on a fixed 240 Hz tick; the view draws an interpolated frame.
+## Every way into play starts from a click or key press (see docs/DECISIONS.md, cursor).
 ##
-## Command line (after `--`): --windowed, --level=<set id>/<number>, --bench[=seconds], --light,
-## --demo, --stress, --set=<key>=<value>, --shot=<png path>, --shot-delay=<seconds>
+## Command line (after `--`): --windowed, --level=<set id>/<number> (quick play, no shop),
+## --bench[=seconds], --light, --demo, --stress, --set=<key>=<value>, --shot=<png path>,
+## --shot-delay=<seconds>, --next-after=<seconds>, --screen=<menu|shop|results|end> (screenshots)
+
+enum Mode { MENU, SHOP, PLAY, RESULTS, END }
+
+## Loadout for quick play (test range, --level, benchmarks).
+const QUICK_LOADOUT := {
+	"reactor": "reactor.core.t1", "shield": "shield.bulwark.t1", "armor": "armor.standard.t1",
+	"weapon1": "weapon.laser.t1", "weapon2": "weapon.chaingun.t1",
+}
+const CLEAR_DELAY := 2.5   # seconds between the last enemy going and the results screen
 
 var sim: GameSim
 var view: WorldView
@@ -14,49 +25,42 @@ var hud_left: HudPanel
 var hud_right: HudPanel
 var overlay: DebugOverlay
 var pause_menu: PauseMenu
+var main_menu: MainMenu
+var shop: ShopScreen
+var results: ResultsScreen
+var end_screen: EndScreen
 
+var mode: Mode = Mode.MENU
 var paused: bool = false
+var run: RunState
+var economy: Dictionary = {}
+
+var _quick: bool = false            # quick play: no shop, no saving
 var _mouse_accum: Vector2 = Vector2.ZERO
 var _field_rect: Rect2
-var _loadout_ids: Dictionary = {}
-var _set: Dictionary = {}        # the level set being played
-var _level_index: int = 0
-var _level_arg: String = ""
 var _data_errors: int = 0
 var _sim_usec: int = 0
 var _tick_dt: float = 1.0 / 240.0
+var _banner: Label
+var _banner_time: float = 0.0
+var _elapsed: float = 0.0
+var _last_usec: int = 0
+var _no_save: bool = false          # command-line overrides must not end up in the saved settings
 
 # Command-line modes
 var _demo: bool = false
-var _bench: bool = false
-var _bench_seconds: float = 12.0
-var _bench_warmup: float = 4.0
-var _bench_frames: PackedFloat32Array = []
-var _bench_bullets: int = 0
+var _bench: BenchRecorder = null
 var _bench_light: bool = false
-var _bench_script_usec: int = 0
-var _bench_over_budget: int = 0
-var _ticks_this_frame: int = 0
-var _prev_stats: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0]
-var _proc_end_usec: int = 0
-var _tick_end_usec: int = 0
-var _gap_a: int = 0
-var _gap_b: int = 0
-var _slow := {"n": 0, "sim": 0.0, "view": 0.0, "ticks": 0.0, "frame": 0.0}
-var _fast := {"n": 0, "sim": 0.0, "view": 0.0, "ticks": 0.0, "frame": 0.0}
-var _gpu_world: float = 0.0
-var _cpu_world: float = 0.0
-var _gpu_ui: float = 0.0
-var _cpu_ui: float = 0.0
+var _level_arg: String = ""
+var _screen_arg: String = ""
 var _shot_path: String = ""
 var _shot_delay: float = 6.0
-var _elapsed: float = 0.0
+var _next_after: float = 0.0
 var _force_windowed: bool = false
-var _last_usec: int = 0
-var _banner: Label
-var _banner_time: float = 0.0
-var _next_after: float = 0.0   # test switch: go to the next level after this many seconds
-var _no_save: bool = false   # command-line overrides must not end up in the saved settings
+var _loadout_arg: PackedStringArray = []   # quick play: item ids to fit instead of QUICK_LOADOUT
+var _special_at: float = -1.0              # demo: fire the special at this time
+var _flow_test: bool = false               # plays a whole campaign by itself at 4x speed, then quits
+var _flow_timer: float = 0.0
 
 
 func _ready() -> void:
@@ -64,37 +68,35 @@ func _ready() -> void:
 	_parse_args()
 	Input.use_accumulated_input = false
 	_tick_dt = 1.0 / Engine.physics_ticks_per_second
-
 	if _force_windowed:
 		Settings.values["window_mode"] = "windowed"
 	Settings.apply_display()
-
 	if OS.is_debug_build():
 		_validate_data()
-	sim = GameSim.new()
-	_loadout_ids = (Data.load_dict("economy.json").get("starting_loadout", {}) as Dictionary).duplicate()
-	_pick_start_level()
-	sim.setup(_build_config())
-	sim.set_power_step(float(Settings.values["power_step"]))
-	if _bench and not _bench_light:
-		sim.stress = true
+	economy = Data.load_dict("economy.json")
 
+	sim = GameSim.new()
+	_show_backdrop(_first_set(), 0)
 	_build_screen()
 	get_viewport().size_changed.connect(_layout)
 	Settings.changed.connect(_on_settings_changed)
 	_layout()
-	# The game opens on a start menu. Besides being the natural place to begin, this matters on
-	# Windows: capturing the pointer only hides it reliably when it follows a real click or key
-	# press, so play always begins from a button. Benchmarks and demos skip the menu.
-	if _demo:
-		_set_paused(false)
-	else:
-		pause_menu.set_start_mode(true)
-		_set_paused(true)
 	_last_usec = Time.get_ticks_usec()
-	if _bench:
-		RenderingServer.viewport_set_measure_render_time(world_viewport.get_viewport_rid(), true)
-		RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
+
+	if _flow_test:
+		Engine.time_scale = 4.0
+		_on_new_game("campaign", "", "normal", -1)
+		print("FLOW shop opened: ", _stage_title(), " credits ", run.credits)
+	elif _bench != null or _demo or _level_arg != "":
+		var set_id := "sandbox" if _level_arg == "" else _level_arg.get_slice("/", 0)
+		_start_quick(set_id, maxi(int(_level_arg.get_slice("/", 1)) - 1, 0) if _level_arg.contains("/") else 0)
+		if _bench != null:
+			sim.stress = not _bench_light
+			_bench.start(world_viewport, get_viewport())
+	elif _screen_arg != "":
+		_debug_screen(_screen_arg)
+	else:
+		_go_menu()
 
 
 func _parse_args() -> void:
@@ -106,22 +108,30 @@ func _parse_args() -> void:
 			_demo = true
 		elif arg == "--stress":
 			_demo = true
-			_bench_warmup = -1.0
 		elif arg.begins_with("--level="):
 			_level_arg = arg.get_slice("=", 1)
 		elif arg.begins_with("--next-after="):
 			_next_after = float(arg.get_slice("=", 1))
+		elif arg.begins_with("--loadout="):
+			_loadout_arg = arg.get_slice("=", 1).split(",")
+		elif arg.begins_with("--special-at="):
+			_special_at = float(arg.get_slice("=", 1))
+		elif arg == "--flow-test":
+			_flow_test = true
+			_demo = true
+		elif arg.begins_with("--screen="):
+			_screen_arg = arg.get_slice("=", 1)
 		elif arg == "--light":
 			_bench_light = true
 		elif arg.begins_with("--bench"):
 			# Uncapped by default; a later --set=fps_cap=... or --set=vsync=true overrides this.
-			if not _bench:
+			if _bench == null:
 				Settings.values["vsync"] = false
 				Settings.values["fps_cap"] = 0
-			_bench = true
+				_bench = BenchRecorder.new()
 			_demo = true
 			if arg.contains("="):
-				_bench_seconds = float(arg.get_slice("=", 1))
+				_bench.seconds = float(arg.get_slice("=", 1))
 		elif arg.begins_with("--set="):
 			# --set=key=value overrides one setting for this run, e.g. --set=msaa=0
 			var key := arg.get_slice("=", 1)
@@ -155,92 +165,22 @@ func _validate_data() -> void:
 	print("Data check: ", validator.summary())
 
 
-## Start level: --level=<set id>/<number>, else the test range for benchmarks, else the first set.
-func _pick_start_level() -> void:
-	_level_index = 0
-	_set = {}
-	if _level_arg != "":
-		_set = Data.find_set(_level_arg.get_slice("/", 0))
-		_level_index = maxi(int(_level_arg.get_slice("/", 1)) - 1, 0)
-		if _set.is_empty():
-			push_warning("Unknown level set in --level=%s" % _level_arg)
-	elif _bench:
-		_set = Data.find_set("sandbox")
-	if _set.is_empty():
-		for s: Dictionary in Data.sets:
-			if not s.get("hidden", false):
-				_set = s
-				break
-	if _set.is_empty() and not Data.sets.is_empty():
-		_set = Data.sets[0]
+func _first_set() -> Dictionary:
+	for s: Dictionary in Data.sets:
+		if not s.get("hidden", false):
+			return s
+	return Data.sets[0] if not Data.sets.is_empty() else {}
 
 
-func _build_config() -> Dictionary:
-	return {
-		"power": Data.load_dict("tech/power_model.json"),
-		"ship": Data.load_dict("tech/ship.json"),
-		"reactor": Data.item(_loadout_ids.get("reactor", "")),
-		"shield": Data.item(_loadout_ids.get("shield", "")),
-		"armor": Data.item(_loadout_ids.get("armor", "")),
-		"weapon1": Data.item(_loadout_ids.get("weapon1", "")),
-		"weapon2": Data.item(_loadout_ids.get("weapon2", "")),
-		"enemies": Data.items_with_prefix("enemy."),
-		"movement": Data.movement,
-		"attack": Data.attack,
-		"level": Data.load_level(_set, _level_index),
-	}
+func _visible_set_ids() -> Array:
+	var out: Array = []
+	for s: Dictionary in Data.sets:
+		if not s.get("hidden", false):
+			out.append(s["id"])
+	return out
 
 
-## Loads the current level into the simulation and refreshes everything that depends on it.
-func _start_level() -> void:
-	var was_stress := sim.stress
-	var was_invincible := sim.invincible
-	sim.setup(_build_config())
-	sim.stress = was_stress
-	sim.invincible = was_invincible
-	view.refresh_sprite_table()
-	view.refresh_loadout()
-	view.rebuild_background()
-	hud_left.refresh_loadout()
-	_update_hud_title()
-
-
-func _update_hud_title() -> void:
-	hud_right.set_title(sim.level_name.to_upper())
-	# Announce the level in the middle of the playfield for a few seconds.
-	_banner.text = "%s  -  STAGE %d\n%s" % [String(_set.get("name", "")).to_upper(), _level_index + 1, sim.level_name.to_upper()]
-	_banner_time = 3.5
-	hud_right.data_errors = _data_errors
-
-
-## Moves through every level of every set, in order (debug level select).
-func _change_level(step: int) -> void:
-	var set_i := Data.sets.find(_set)
-	_level_index += step
-	if _level_index >= (_set.get("levels", []) as Array).size():
-		set_i = posmod(set_i + 1, Data.sets.size())
-		_set = Data.sets[set_i]
-		_level_index = 0
-	elif _level_index < 0:
-		set_i = posmod(set_i - 1, Data.sets.size())
-		_set = Data.sets[set_i]
-		_level_index = (_set.get("levels", []) as Array).size() - 1
-	_start_level()
-
-
-## Re-reads every data and asset file without restarting the game (debug builds, F6).
-func _hot_reload() -> void:
-	var set_id: String = _set.get("id", "")
-	Data.reload()
-	Assets.reload()
-	_validate_data()
-	_set = Data.find_set(set_id)
-	if _set.is_empty():
-		_pick_start_level()
-	view.reset_models()
-	_start_level()
-	print("Data reloaded")
-
+# ---------------------------------------------------------------- screen construction
 
 func _build_screen() -> void:
 	world_viewport = SubViewport.new()
@@ -255,8 +195,9 @@ func _build_screen() -> void:
 	view.setup(sim)
 
 	var ui := Control.new()
-	ui.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ui.theme = UiTheme.build()
 	add_child(ui)
 
 	playfield = TextureRect.new()
@@ -275,19 +216,6 @@ func _build_screen() -> void:
 	hud_right.is_left = false
 	ui.add_child(hud_right)
 
-	overlay = DebugOverlay.new()
-	overlay.sim = sim
-	overlay.world_viewport = world_viewport
-	overlay.position = Vector2(8, 8)
-	overlay.visible = _bench
-	ui.add_child(overlay)
-
-	var shield_ids: Array[String] = []
-	var shield_names: Array[String] = []
-	for id: String in Data.items:
-		if id.begins_with("shield."):
-			shield_ids.append(id)
-			shield_names.append(Data.items[id].get("name", id))
 	_banner = Label.new()
 	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_banner.add_theme_font_size_override("font_size", 34)
@@ -298,17 +226,43 @@ func _build_screen() -> void:
 	_banner.visible = false
 	ui.add_child(_banner)
 
+	results = ResultsScreen.new()
+	results.continue_requested.connect(_on_results_continue)
+	ui.add_child(results)
+	shop = ShopScreen.new()
+	shop.launch_requested.connect(_on_launch)
+	shop.menu_requested.connect(func() -> void:
+		_save()
+		_go_menu())
+	ui.add_child(shop)
+	end_screen = EndScreen.new()
+	end_screen.done.connect(_go_menu)
+	ui.add_child(end_screen)
+	main_menu = MainMenu.new()
+	main_menu.new_game_requested.connect(_on_new_game)
+	main_menu.load_requested.connect(_on_load)
+	main_menu.test_range_requested.connect(func() -> void: _start_quick("sandbox", 0))
+	main_menu.quit_requested.connect(_quit)
+	main_menu.display_changed.connect(_apply_display)
+	ui.add_child(main_menu)
+
 	pause_menu = PauseMenu.new()
-	pause_menu.build(shield_ids, shield_names, _loadout_ids.get("shield", ""))
 	pause_menu.resume_requested.connect(func() -> void: _set_paused(false))
 	pause_menu.restart_requested.connect(func() -> void:
 		sim.restart()
 		_set_paused(false))
+	pause_menu.menu_requested.connect(_go_menu)
 	pause_menu.quit_requested.connect(_quit)
-	pause_menu.shield_selected.connect(_on_shield_selected)
 	pause_menu.display_changed.connect(_apply_display)
 	ui.add_child(pause_menu)
-	_update_hud_title()
+
+	overlay = DebugOverlay.new()
+	overlay.sim = sim
+	overlay.world_viewport = world_viewport
+	overlay.position = Vector2(8, 8)
+	overlay.visible = _bench != null
+	ui.add_child(overlay)
+	_set_mode(Mode.MENU)
 
 
 func _layout() -> void:
@@ -328,7 +282,6 @@ func _layout() -> void:
 	_banner.size = Vector2(_field_rect.size.x, 100)
 	hud_right.position = Vector2(_field_rect.end.x, 0)
 	hud_right.size = Vector2(vs.x - _field_rect.end.x, vs.y)
-
 	# Render the playfield at real pixel size (times render scale), not at UI size.
 	var px_per_unit := float(get_window().size.y) / vs.y
 	var rs := clampf(float(Settings.values["render_scale"]), 0.25, 2.0)
@@ -342,17 +295,28 @@ func _apply_display() -> void:
 
 
 func _on_settings_changed() -> void:
-	if not paused:
-		_update_mouse_mode()
+	_update_mouse_mode()
 
 
-func _on_shield_selected(shield_id: String) -> void:
-	_loadout_ids["shield"] = shield_id
-	_start_level()
+# ---------------------------------------------------------------- modes
+
+func _set_mode(m: Mode) -> void:
+	mode = m
+	paused = false
+	main_menu.visible = m == Mode.MENU
+	shop.visible = m == Mode.SHOP
+	results.visible = m == Mode.RESULTS
+	end_screen.visible = m == Mode.END
+	pause_menu.visible = false
+	hud_left.visible = m == Mode.PLAY or m == Mode.RESULTS
+	hud_right.visible = hud_left.visible
+	view.show_player = hud_left.visible
+	_mouse_accum = Vector2.ZERO
+	_update_mouse_mode()
 
 
 func _update_mouse_mode() -> void:
-	if paused or _demo:
+	if mode != Mode.PLAY or paused or _demo:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif String(Settings.values["mouse_mode"]) == "absolute":
 		Input.mouse_mode = Input.MOUSE_MODE_CONFINED_HIDDEN
@@ -361,14 +325,39 @@ func _update_mouse_mode() -> void:
 
 
 func _set_paused(p: bool) -> void:
+	if mode != Mode.PLAY:
+		return
 	paused = p
 	pause_menu.visible = p
 	_mouse_accum = Vector2.ZERO
-	if not p:
-		pause_menu.set_start_mode(false)
 	_update_mouse_mode()
 	if not p and not _no_save:
 		Settings.save_settings()
+
+
+## Shows a level's scenery with no enemies, behind the menus and the shop.
+func _show_backdrop(set_def: Dictionary, index: int) -> void:
+	var level := Data.load_level(set_def, index).duplicate()
+	level["waves"] = []
+	var r := RunState.create("single", [], "normal", economy, {}, 0.0, QUICK_LOADOUT)
+	sim.setup(StageConfig.build(r, Data, level))
+	if view != null:
+		_refresh_stage_views()
+
+
+func _refresh_stage_views() -> void:
+	view.refresh_sprite_table()
+	view.refresh_loadout()
+	view.rebuild_background()
+	hud_left.refresh_loadout()
+
+
+func _go_menu() -> void:
+	run = null
+	_quick = false
+	_show_backdrop(_first_set(), 0)
+	_set_mode(Mode.MENU)
+	main_menu.show_page("home")
 
 
 func _quit() -> void:
@@ -377,8 +366,223 @@ func _quit() -> void:
 	get_tree().quit()
 
 
+func _save() -> void:
+	if run != null and not _quick and not _no_save:
+		SaveSystem.save(run)
+
+
+# ---------------------------------------------------------------- run flow
+
+func _on_new_game(p_mode: String, set_id: String, difficulty: String, slot: int) -> void:
+	var diff := StageConfig.difficulty_def(Data, difficulty)
+	if p_mode == "campaign":
+		run = RunState.create("campaign", _visible_set_ids(), difficulty, economy, diff)
+	else:
+		var s := Data.find_set(set_id)
+		var single: Dictionary = s.get("single_set", {})
+		run = RunState.create("single", [set_id], difficulty, economy, diff,
+				float(single.get("credits", economy.get("starting_credits", 3000))), single.get("loadout", {}))
+	run.slot = slot
+	_quick = false
+	_open_shop()
+
+
+func _on_load(slot: int) -> void:
+	var r := SaveSystem.load_slot(slot)
+	if r == null:
+		push_warning("Could not load slot %d" % slot)
+		return
+	run = r
+	_quick = false
+	_open_shop()
+
+
+## Quick play: straight into a level with the quick loadout; no shop, nothing saved.
+func _start_quick(set_id: String, index: int) -> void:
+	var ids: Array = []
+	for s: Dictionary in Data.sets:
+		ids.append(s["id"])
+	run = RunState.create("campaign", ids, "normal", economy, {}, 0.0, QUICK_LOADOUT)
+	run.set_pos = maxi(ids.find(set_id), 0)
+	run.level_index = index
+	run.credits = 1000000
+	# --loadout fits the listed items directly, ignoring prices and prerequisites;
+	# the first weapon goes on LMB and the second on RMB.
+	var weapon_slot := 0
+	for id in _loadout_arg:
+		if not Data.items.has(id):
+			push_warning("--loadout: unknown item %s" % id)
+			continue
+		var item: Dictionary = Data.items[id]
+		run.owned[id] = 0
+		var slots := ShopRules.slots_for(item)
+		var slot: String = slots[0]
+		if item.get("category", "") == "weapon":
+			slot = slots[mini(weapon_slot, 1)]
+			weapon_slot += 1
+		if item.get("category", "") == "special":
+			run.ammo[id] = int(item.get("ammo", 0))
+		run.equipped[slot] = id
+	_quick = true
+	_start_stage()
+
+
+func _current_set() -> Dictionary:
+	return Data.find_set(run.current_set_id())
+
+
+func _stage_title() -> String:
+	var s := _current_set()
+	var level := Data.load_level(s, run.level_index)
+	return "%s %d: %s" % [s.get("name", ""), run.level_index + 1, level.get("name", "")]
+
+
+func _open_shop() -> void:
+	_save()
+	_show_backdrop(_current_set(), run.level_index)
+	_set_mode(Mode.SHOP)
+	shop.open(run, Data.items, economy, _stage_title())
+
+
+func _on_launch() -> void:
+	_save()
+	_start_stage()
+
+
+func _start_stage() -> void:
+	var was_stress := sim.stress
+	var was_invincible := sim.invincible
+	var s := _current_set()
+	sim.setup(StageConfig.build(run, Data, Data.load_level(s, run.level_index)))
+	sim.set_power_step(float(Settings.values["power_step"]))
+	sim.stress = was_stress
+	sim.invincible = was_invincible
+	_refresh_stage_views()
+	hud_left.bank_credits = run.credits
+	hud_right.bank_credits = run.credits
+	hud_right.set_title(sim.level_name.to_upper())
+	hud_right.data_errors = _data_errors
+	_banner.text = "%s  -  STAGE %d\n%s" % [String(s.get("name", "")).to_upper(), run.level_index + 1, sim.level_name.to_upper()]
+	_banner_time = 3.5
+	_set_mode(Mode.PLAY)
+
+
+## The stage is cleared: bank the results into the run and show them.
+func _finish_stage() -> void:
+	if _quick:
+		_change_level(1)
+		return
+	var stats := StageConfig.stage_stats(sim)
+	var diff := StageConfig.difficulty_def(Data, run.difficulty)
+	var res := Economy.stage_results(stats, economy, diff)
+	run.credits += int(res["total"])
+	run.hull_damage = maxf(0.0, sim.player.armor_max - sim.player.armor)
+	if sim.player.special != null:
+		run.ammo[run.equipped["special"]] = sim.player.special.ammo
+	var st := run.stats
+	st["stages_cleared"] += 1
+	st["kills"] += sim.kills
+	st["credits_earned"] += int(res["total"])
+	st["shots_fired"] += sim.shots_fired
+	st["shots_hit"] += sim.shots_hit
+	_set_mode(Mode.RESULTS)
+	results.open("%s  CLEAR" % _stage_title().to_upper(), res)
+
+
+func _on_results_continue() -> void:
+	var s := _current_set()
+	var set_id: String = s.get("id", "")
+	var old_pos := run.set_pos
+	var more := run.advance((s.get("levels", []) as Array).size())
+	if run.set_pos != old_pos:
+		SaveSystem.mark_set_completed(set_id)
+	if not more:
+		_save()
+		_set_mode(Mode.END)
+		end_screen.open("CAMPAIGN COMPLETE" if run.mode == "campaign" else "%s COMPLETE" % String(s.get("name", "")).to_upper(), run)
+		return
+	run.shop_visit += 1
+	_open_shop()
+
+
+## Debug level select (PgUp / PgDn): steps through every level of the run's sets.
+func _change_level(step: int) -> void:
+	var s := _current_set()
+	run.level_index += step
+	if run.level_index >= (s.get("levels", []) as Array).size():
+		run.set_pos = posmod(run.set_pos + 1, run.set_ids.size())
+		run.level_index = 0
+	elif run.level_index < 0:
+		run.set_pos = posmod(run.set_pos - 1, run.set_ids.size())
+		run.level_index = maxi((_current_set().get("levels", []) as Array).size() - 1, 0)
+	_start_stage()
+
+
+## Re-reads every data and asset file without restarting the game (debug builds, F6).
+func _hot_reload() -> void:
+	Data.reload()
+	Assets.reload()
+	economy = Data.load_dict("economy.json")
+	_validate_data()
+	view.reset_models()
+	_start_stage()
+	print("Data reloaded")
+
+
+## --flow-test: buys something, launches, lets the demo pilot clear each stage, continues
+## through results and shops, and prints what happened at each step.
+func _step_flow_test(delta: float) -> void:
+	_flow_timer += delta
+	if _flow_timer < 0.5:
+		return
+	match mode:
+		Mode.SHOP:
+			_flow_timer = 0.0
+			ShopRules.buy(run, Data.items, "weapon.chaingun.t1")
+			ShopRules.buy(run, Data.items, "special.cluster.t1")
+			print("FLOW launch ", _stage_title(), " loadout ", run.equipped, " credits ", run.credits)
+			_on_launch()
+		Mode.PLAY:
+			if _flow_timer > 600.0:
+				print("FLOW FAIL: stage did not finish")
+				get_tree().quit(1)
+		Mode.RESULTS:
+			_flow_timer = 0.0
+			print("FLOW results: credits now ", run.credits, " hull damage ", run.hull_damage, " ammo ", run.ammo)
+			_on_results_continue()
+		Mode.END:
+			print("FLOW end: ", run.stats)
+			get_tree().quit(0)
+
+
+## For screenshots and checks: --screen=menu|shop|results|end opens that screen with a sample run.
+func _debug_screen(which: String) -> void:
+	run = RunState.create("campaign", _visible_set_ids(), "normal", economy, {})
+	run.slot = -1
+	_quick = true
+	ShopRules.buy(run, Data.items, "shield.bulwark.t1")
+	ShopRules.buy(run, Data.items, "weapon.chaingun.t1")
+	ShopRules.buy(run, Data.items, "special.seeker.t1")
+	run.hull_damage = 35.0
+	match which:
+		"shop":
+			_open_shop()
+		"results":
+			_set_mode(Mode.RESULTS)
+			var stats := {"kills": 41, "spawned": 47, "kill_credits": 930, "shots_fired": 860, "shots_hit": 517,
+				"hull_damage": 24.0, "armor_start": 100.0, "boss_spawned": false}
+			results.open("FRONTIER 1: COASTAL APPROACH  CLEAR", Economy.stage_results(stats, economy, {"credit_mult": 1.0}))
+		"end":
+			_set_mode(Mode.END)
+			end_screen.open("FRONTIER COMPLETE", run)
+		_:
+			_go_menu()
+
+
+# ---------------------------------------------------------------- input and loop
+
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and sim != null and not _demo:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and sim != null and not _demo and mode == Mode.PLAY:
 		_set_paused(true)
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_quit()
@@ -386,14 +590,17 @@ func _notification(what: int) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
-		if not paused and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if mode == Mode.PLAY and not paused and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			# screen_relative is raw mouse movement, unaffected by UI scaling.
 			_mouse_accum += (event as InputEventMouseMotion).screen_relative
 		return
+	if event.is_action_pressed("debug_overlay"):
+		overlay.visible = not overlay.visible
+		return
+	if mode != Mode.PLAY:
+		return
 	if event.is_action_pressed("pause"):
 		_set_paused(not paused)
-	elif event.is_action_pressed("debug_overlay"):
-		overlay.visible = not overlay.visible
 	elif paused:
 		return
 	elif event.is_action_pressed("power_weapons"):
@@ -402,20 +609,21 @@ func _input(event: InputEvent) -> void:
 		sim.shift_power(1 if Settings.values["invert_wheel"] else -1)
 	elif event.is_action_pressed("special"):
 		sim.fire_special()
-	elif event.is_action_pressed("debug_stress"):
-		sim.stress = not sim.stress
-	elif event.is_action_pressed("debug_invincible"):
-		sim.invincible = not sim.invincible
-	elif event.is_action_pressed("debug_next_level"):
-		_change_level(1)
-	elif event.is_action_pressed("debug_prev_level"):
-		_change_level(-1)
-	elif event.is_action_pressed("debug_reload") and OS.is_debug_build():
-		_hot_reload()
+	elif OS.is_debug_build():
+		if event.is_action_pressed("debug_stress"):
+			sim.stress = not sim.stress
+		elif event.is_action_pressed("debug_invincible"):
+			sim.invincible = not sim.invincible
+		elif event.is_action_pressed("debug_next_level"):
+			_change_level(1)
+		elif event.is_action_pressed("debug_prev_level"):
+			_change_level(-1)
+		elif event.is_action_pressed("debug_reload"):
+			_hot_reload()
 
 
 func _physics_process(delta: float) -> void:
-	if paused:
+	if mode != Mode.PLAY or paused:
 		return
 	if _demo:
 		sim.invincible = true
@@ -423,6 +631,9 @@ func _physics_process(delta: float) -> void:
 		sim.in_target = Vector2(sin(sim.time * 0.9) * 30.0, 34.0 + sin(sim.time * 0.37) * 10.0)
 		sim.in_fire_1 = true
 		sim.in_fire_2 = fmod(sim.time, 6.0) < 4.0
+		if _special_at >= 0.0 and sim.time >= _special_at:
+			_special_at = -1.0
+			sim.fire_special()
 	else:
 		sim.in_absolute = String(Settings.values["mouse_mode"]) == "absolute"
 		if sim.in_absolute:
@@ -433,12 +644,8 @@ func _physics_process(delta: float) -> void:
 		sim.in_fire_1 = Input.is_action_pressed("fire_1")
 		sim.in_fire_2 = Input.is_action_pressed("fire_2")
 	var t0 := Time.get_ticks_usec()
-	if _ticks_this_frame == 0:
-		_gap_a = t0 - _proc_end_usec
 	sim.step(delta)
-	_tick_end_usec = Time.get_ticks_usec()
-	_sim_usec += _tick_end_usec - t0
-	_ticks_this_frame += 1
+	_sim_usec += Time.get_ticks_usec() - t0
 
 
 ## Where the mouse cursor points on the gameplay plane (absolute mouse mode).
@@ -457,69 +664,49 @@ func _mouse_on_playfield() -> Vector2:
 
 func _process(delta: float) -> void:
 	var now := Time.get_ticks_usec()
-	if _ticks_this_frame == 0:
-		_gap_a = now - _proc_end_usec
-		_gap_b = 0
-	else:
-		_gap_b = now - _tick_end_usec
 	var frame_ms := (now - _last_usec) / 1000.0
 	_last_usec = now
 	overlay.push_frame(frame_ms)
 	overlay.sim_ms = lerpf(overlay.sim_ms, _sim_usec / 1000.0, 0.05)
-	if _bench and _elapsed >= _bench_warmup:
-		_bench_script_usec += _sim_usec
-	var sim_usec_frame := _sim_usec
-	var ticks_frame := _ticks_this_frame
-	_ticks_this_frame = 0
+	var frame_script_usec := _sim_usec
 	_sim_usec = 0
 
-	# A cleared stage rolls on to the next level of the set after a short pause.
-	# (The results screen and shop take over this hand-off in Milestone 4.)
-	if sim.state == GameSim.STATE_CLEAR and sim.clear_time > 3.5 and not paused:
-		_change_level(1)
+	var playing := mode == Mode.PLAY and not paused
+	if playing and run != null:
+		run.stats["play_time"] += delta
+	if mode == Mode.PLAY and sim.state == GameSim.STATE_CLEAR and sim.clear_time > CLEAR_DELAY:
+		_finish_stage()
+	if mode != Mode.PLAY:
+		# Keep the scenery drifting behind the menus.
+		sim.scroll += delta * 8.0
+		sim.time += delta
 
 	var t0 := Time.get_ticks_usec()
 	_drain_events()
 	var alpha := Engine.get_physics_interpolation_fraction()
-	view.render(alpha if not paused else 1.0, delta, _tick_dt, not paused)
+	view.render(alpha if playing else 1.0, delta, _tick_dt, playing)
 	var view_usec := Time.get_ticks_usec() - t0
 	overlay.view_ms = lerpf(overlay.view_ms, view_usec / 1000.0, 0.05)
-	if _bench and _elapsed >= _bench_warmup:
-		_bench_script_usec += view_usec
-		# frame_ms measured now is the length of the previous frame, so bucket the previous frame's numbers.
-		var b: Dictionary = _slow if frame_ms > 4.6 else _fast
-		b["n"] += 1
-		b["sim"] += _prev_stats[0]
-		b["view"] += _prev_stats[1]
-		b["ticks"] += _prev_stats[2]
-		b["frame"] += frame_ms
-		_prev_stats[0] = sim_usec_frame / 1000.0
-		_prev_stats[1] = view_usec / 1000.0
-		_prev_stats[2] = ticks_frame
-		b["gap_a"] = b.get("gap_a", 0.0) + _prev_stats[3]
-		b["gap_b"] = b.get("gap_b", 0.0) + _prev_stats[4]
-		_prev_stats[3] = _gap_a / 1000.0
-		_prev_stats[4] = _gap_b / 1000.0
+	frame_script_usec += view_usec
 
 	_elapsed += delta
-	# The OS can ignore a cursor capture requested before the window is fully up or focused,
-	# so the mouse mode is applied again shortly after start and after regaining focus.
+	if _flow_test:
+		_step_flow_test(delta)
 	if _next_after > 0.0 and _elapsed >= _next_after:
 		_next_after = 0.0
 		_change_level(1)
 	if _banner_time > 0.0:
 		_banner_time -= delta
 		_banner.modulate.a = clampf(_banner_time, 0.0, 1.0)
-		_banner.visible = _banner_time > 0.0
-	if _bench:
-		_run_bench(frame_ms)
-	_proc_end_usec = Time.get_ticks_usec()
+		_banner.visible = _banner_time > 0.0 and mode == Mode.PLAY
+	if _bench != null and _bench.record(_elapsed, frame_ms, frame_script_usec, sim, world_viewport, get_viewport(), overlay):
+		get_tree().quit()
 	if _shot_path != "" and _elapsed >= _shot_delay:
 		var img := get_viewport().get_texture().get_image()
 		img.save_png(_shot_path)
 		print("Saved screenshot to ", _shot_path)
 		_shot_path = ""
-		if not _bench:
+		if _bench == null:
 			get_tree().quit()
 
 
@@ -532,87 +719,26 @@ func _drain_events() -> void:
 		view.handle_event(type, ev[o + 1], ev[o + 2], value)
 		match type:
 			GameSim.EV_SHOT:
-				Sfx.play_asset(sim.player.weapons[int(value)].sound, 1.0, randf_range(0.95, 1.05), 0.045)
+				var w := sim.player.weapons[int(value)]
+				if w != null:
+					Sfx.play_asset(w.sound, 1.0, randf_range(0.95, 1.05), 0.045)
+			GameSim.EV_SPECIAL:
+				if value > 0.5 and sim.player.special != null:
+					Sfx.play_asset(sim.player.special.sound, 1.0, randf_range(0.95, 1.05))
+				else:
+					Sfx.play_asset("sfx.special.empty")
+			GameSim.EV_SPLASH:
+				Sfx.play_asset("sfx.explosion", clampf(value * 0.08, 0.15, 0.5), randf_range(1.2, 1.5), 0.05)
 			GameSim.EV_EXPLOSION:
 				Sfx.play_asset("sfx.explosion", clampf(value * 0.2, 0.4, 1.0), randf_range(0.8, 1.2), 0.03)
 			GameSim.EV_SHIELD_HIT:
 				Sfx.play_asset("sfx.shield.hit", 1.0, 1.0, 0.05)
 			GameSim.EV_HULL_HIT:
 				Sfx.play_asset("sfx.hull.hit", 1.0, 1.0, 0.05)
+			GameSim.EV_PLAYER_DEAD:
+				if run != null:
+					run.stats["deaths"] += 1
 			GameSim.EV_POWER:
 				hud_left.power_flash = 1.0
 				Sfx.play_asset("sfx.ui.power", 1.0, 0.8 + (1.0 - value) * 0.7)
 	sim.event_count = 0
-
-
-func _run_bench(frame_ms: float) -> void:
-	if _elapsed < _bench_warmup:
-		return
-	_bench_frames.append(frame_ms)
-	if frame_ms > 4.6:
-		_bench_over_budget += 1
-	var wrid := world_viewport.get_viewport_rid()
-	var rrid := get_viewport().get_viewport_rid()
-	_gpu_world = lerpf(_gpu_world, RenderingServer.viewport_get_measured_render_time_gpu(wrid), 0.02)
-	_cpu_world = lerpf(_cpu_world, RenderingServer.viewport_get_measured_render_time_cpu(wrid), 0.02)
-	_gpu_ui = lerpf(_gpu_ui, RenderingServer.viewport_get_measured_render_time_gpu(rrid), 0.02)
-	_cpu_ui = lerpf(_cpu_ui, RenderingServer.viewport_get_measured_render_time_cpu(rrid), 0.02)
-	_bench_bullets = maxi(_bench_bullets, sim.ebul.count + sim.pbul.count)
-	if _elapsed < _bench_warmup + _bench_seconds:
-		return
-	var frames := _bench_frames.duplicate()
-	frames.sort()
-	var n := frames.size()
-	var total := 0.0
-	for v in frames:
-		total += v
-	var avg := total / n
-	var p99 := frames[mini(n - 1, int(n * 0.99))]
-	var p999 := frames[mini(n - 1, int(n * 0.999))]
-	var win := get_window().size
-	var result := {
-		"driver": RenderingServer.get_current_rendering_driver_name(),
-		"adapter": RenderingServer.get_video_adapter_name(),
-		"window": "%dx%d" % [win.x, win.y],
-		"screen": str(DisplayServer.screen_get_size()),
-		"gpu_world_ms": snappedf(_gpu_world, 0.001),
-		"cpu_world_ms": snappedf(_cpu_world, 0.001),
-		"gpu_ui_ms": snappedf(_gpu_ui, 0.001),
-		"cpu_ui_ms": snappedf(_cpu_ui, 0.001),
-		"msaa": Settings.values["msaa"],
-		"glow": Settings.values["glow"],
-		"playfield": "%dx%d" % [world_viewport.size.x, world_viewport.size.y],
-		"frames": n,
-		"pct_frames_over_4_6ms": snappedf(100.0 * _bench_over_budget / n, 0.01),
-		"script_ms_per_frame_true_avg": snappedf(_bench_script_usec / 1000.0 / n, 0.001),
-		"avg_fps": snappedf(1000.0 / avg, 0.1),
-		"avg_ms": snappedf(avg, 0.001),
-		"p99_ms": snappedf(p99, 0.001),
-		"low_1pct_fps": snappedf(1000.0 / p99, 0.1),
-		"p999_ms": snappedf(p999, 0.001),
-		"worst_ms": snappedf(frames[n - 1], 0.001),
-		"sim_ms_per_frame": snappedf(overlay.sim_ms, 0.001),
-		"view_ms_per_frame": snappedf(overlay.view_ms, 0.001),
-		"enemies": sim.enemy_count,
-		"peak_bullets": _bench_bullets,
-	}
-	for b: Dictionary in [_slow, _fast]:
-		var c: float = maxf(b["n"], 1.0)
-		print("  %s frames: n=%d frame=%.2f sim=%.2f view=%.2f ticks=%.2f render_gap=%.2f tick_gap=%.2f" % [
-			"slow" if b == _slow else "fast", b["n"], b["frame"] / c, b["sim"] / c, b["view"] / c, b["ticks"] / c,
-			b.get("gap_a", 0.0) / c, b.get("gap_b", 0.0) / c])
-	var seq := PackedStringArray()
-	for i in range(_bench_frames.size() - 150, _bench_frames.size() - 10):
-		seq.append("%.1f" % _bench_frames[i])
-	print("  seq: ", " ".join(seq))
-	print("  monitors: process=%.3f ms  physics_process=%.3f ms  navigation=%.3f ms  frame_setup_cpu=%.3f ms" % [
-		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
-		Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
-		Performance.get_monitor(Performance.TIME_NAVIGATION_PROCESS) * 1000.0,
-		RenderingServer.get_frame_setup_time_cpu()])
-	print("BENCH ", JSON.stringify(result))
-	var f := FileAccess.open("user://bench_last.json", FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(result, "	"))
-		f.close()
-	get_tree().quit()

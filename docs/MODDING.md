@@ -95,13 +95,40 @@ left. `"loop": true` with `loop_length` makes an endless level like the test ran
 Start any level directly with `tools\run.ps1 --level=frontier/1`, or step through all of them with
 PgUp and PgDn.
 
-### Add a weapon, shield, reactor or armor
+### Add a weapon, shield, reactor, armor or special
 
-Copy an entry in the matching `data/tech/` file and give it a new `id`. For weapons,
-`power_scaling` lists `[value at 0% weapon power, value at 100%]` for damage and fire rate.
-`requires` (list of ids) and `excludes` describe the tree; the validator rejects cycles and items
-that could never be bought. The shop that uses them arrives in Milestone 4; until then the starting
-loadout in `data/economy.json` decides what the ship carries.
+Copy an entry in the matching `data/tech/` file (`weapons.json`, `shields.json`, `reactors.json`,
+`armor.json`, `specials.json`) and give it a new `id`. Every item has `name`, `description`,
+`category`, `branch`, `tier`, `cost`, and optionally `requires` (ids that must be owned first) and
+`excludes` (ids that cannot be owned together with it; one side is enough). The shop draws a column
+per branch, in the order branches first appear in the file, and a row per tier. The validator
+rejects unknown ids, prerequisite cycles and items that could never be bought.
+
+Weapons are built from components, so new weapons need no code:
+
+| Field | Meaning |
+|---|---|
+| `behaviour` | `projectile` (default), `beam` (continuous; `damage` and `energy_per_shot` are per second) or `rail` (hold to charge, instant line) |
+| `projectiles`, `spread_deg`, `spacing`, `random_spread_deg` | shots per trigger pull, fanned over `spread_deg` or side by side `spacing` apart |
+| `pierce` | enemies a shot or beam passes through |
+| `splash` | explosion radius on impact (damages everything in it) |
+| `sweep_deg`, `sweep_speed`, `range`, `beam_width` | beams: side-to-side sweep, reach and thickness |
+| `charge_time` | rails: seconds of holding before each shot |
+| `heat_per_shot`, `heat_capacity`, `heat_dissipation`, `spin_up` | kinetic drawbacks |
+| `power_scaling` | `[multiplier at 0% weapon power, at 100%]` for `damage` and `fire_rate` |
+
+Specials: `ammo` (uses), `restock_cost` (per use), `volley`, `spread_deg`, `launch` (`forward` or
+`behind`), `cooldown`, `effect: "shockwave"` with `shockwave_damage`, or a `projectile` with `speed`,
+`damage`, `splash`, `homing` (turn rate), `wander`, `fuse`, `proximity`, `drift` and an optional
+`burst` (bomblets: `count`, `speed`, `damage`, `splash`, `lifetime`).
+
+Try any item without buying it: `tools\run.ps1 --level=frontier/1 --loadout=weapon.phaser.t3,special.mines.t2`.
+
+### Economy and difficulty
+
+`data/economy.json` holds starting credits and loadout, the sell refund, the repair price and the
+weights of every line on the results screen. `data/difficulty.json` lists the difficulty levels; add
+one and it appears in the new-game menu.
 
 ### Replace a model
 

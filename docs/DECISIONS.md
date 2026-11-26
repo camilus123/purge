@@ -147,3 +147,33 @@ with a 240 cap, tick/frame alignment) before bosses arrive in Milestone 5.
   were removed.
 - The game now opens on a start menu (the pause menu with a Start button), so play always begins from
   a click or key press. Benchmark and demo runs skip it. This menu grows into the main menu in Milestone 4.
+
+## 2026-11-26: Milestone 4 decisions (shop and tech tree)
+
+- **Tech tree size:** 80 items. Shields: Bulwark, Flicker, Mirror (5 tiers each). Weapons: Pulse Laser
+  (bolts, twin bolts, then a beam), Scatter Emitter (particle fan), Arc Phaser (sweeping piercing beam),
+  Coil Rail (charged instant line), Chain Gun, Flak Cannon (explosive splash), 5 tiers each.
+  Specials: Seeker Pod, Hornet Swarm, Breaker Torpedo, Cluster Bomb, Shockwave Bomb, Mine Layer
+  (3 tiers each). Reactors: Fission Cell I-II, then Steady (Lattice) or Surge (Surge Bank) for tiers
+  3-5. Armor: Standard, then Heavy or Reactive for tiers 2-5. Steady/Surge and Heavy/Reactive are
+  mutually exclusive (`excludes`, which works in both directions).
+- **Start of a run:** 3,000 credits (x difficulty), owning Fission Cell I, Standard Plating and Pulse
+  Laser I. No shield, no second weapon and no special: the first shop visit is a real choice.
+- **Ammo counts uses.** A Seeker Pod use fires a volley of 3-5 missiles; buying a special fills it.
+- **Selling:** blocked for items another owned item is built on, and for the equipped reactor or
+  armor (the ship needs one of each). Buying the next tier of the equipped branch equips it.
+- **Hull damage carries between stages** and is repaired in the shop (3 credits per point, partial
+  repairs allowed). A death restarts the stage with the armor and ammo the stage began with.
+- **Stage results** use `economy.json` "results": kill credits, kill-percentage tiers, accuracy
+  (scaled above 20%), hull bonus (full bonus with no hull damage), boss kill and boss time bonus
+  (levels mark boss waves with `"boss": true` and set `boss_par_time`), then the difficulty multiplier.
+  Pickups and secrets have their lines ready but arrive with the level content in Milestone 5.
+- **Accuracy** counts each primary-weapon projectile once (pierce hits do not inflate it); beams count
+  one shot per 0.1 s of firing; specials are not counted.
+- **Saves:** three slots, JSON in the user folder, version 1, saved when entering the shop and when
+  launching a stage. Quitting mid-stage resumes at the shop before that stage. Loading a save starts
+  a new shop visit, so same-visit full refunds do not survive a reload.
+- **Unlocks:** completing a set is remembered in `user://profile.json`; single-set play offers a set once
+  the one before it is completed, all sets in debug builds or when `unlock_all_sets` is true.
+- **Every way into play still starts from a click** (Launch in the shop), keeping the cursor fix.
+- **Quick play** (`--level`, the debug "Test range" button, benchmarks) skips the shop and saving.
