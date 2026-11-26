@@ -1,5 +1,9 @@
 # Changelog
 
+## Start menu (2026-11-26)
+- The game opens on a start menu with a Start button and the settings; this also cures the cursor
+  ring that stayed visible after launch. The earlier timed cursor workarounds are gone.
+
 ## Fixes after Milestone 3 feedback (2026-11-26)
 - Cursor capture is re-applied on a timer (0.2 to 4 seconds after start and after regaining focus);
   the earlier frame-counted fix finished within a few milliseconds at high framerates.
