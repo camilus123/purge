@@ -53,7 +53,10 @@ var _shot_delay: float = 6.0
 var _elapsed: float = 0.0
 var _force_windowed: bool = false
 var _last_usec: int = 0
-var _mouse_reapply: int = 41   # frames; re-applies at 40, 30, 20, 10 and 0
+var _mouse_fix_times: Array[float] = [0.2, 0.5, 1.0, 2.0, 4.0]   # seconds after start at which the cursor capture is re-applied
+var _banner: Label
+var _banner_time: float = 0.0
+var _next_after: float = 0.0   # test switch: go to the next level after this many seconds
 var _no_save: bool = false   # command-line overrides must not end up in the saved settings
 
 
@@ -100,6 +103,8 @@ func _parse_args() -> void:
 			_bench_warmup = -1.0
 		elif arg.begins_with("--level="):
 			_level_arg = arg.get_slice("=", 1)
+		elif arg.begins_with("--next-after="):
+			_next_after = float(arg.get_slice("=", 1))
 		elif arg == "--light":
 			_bench_light = true
 		elif arg.begins_with("--bench"):
@@ -196,6 +201,9 @@ func _start_level() -> void:
 
 func _update_hud_title() -> void:
 	hud_right.set_title(sim.level_name.to_upper())
+	# Announce the level in the middle of the playfield for a few seconds.
+	_banner.text = "%s  -  STAGE %d\n%s" % [String(_set.get("name", "")).to_upper(), _level_index + 1, sim.level_name.to_upper()]
+	_banner_time = 3.5
 	hud_right.data_errors = _data_errors
 
 
@@ -274,6 +282,16 @@ func _build_screen() -> void:
 		if id.begins_with("shield."):
 			shield_ids.append(id)
 			shield_names.append(Data.items[id].get("name", id))
+	_banner = Label.new()
+	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner.add_theme_font_size_override("font_size", 34)
+	_banner.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
+	_banner.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_banner.add_theme_constant_override("outline_size", 8)
+	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.visible = false
+	ui.add_child(_banner)
+
 	pause_menu = PauseMenu.new()
 	pause_menu.build(shield_ids, shield_names, _loadout_ids.get("shield", ""))
 	pause_menu.resume_requested.connect(func() -> void: _set_paused(false))
@@ -300,6 +318,8 @@ func _layout() -> void:
 	playfield.size = _field_rect.size
 	hud_left.position = Vector2.ZERO
 	hud_left.size = Vector2(_field_rect.position.x, vs.y)
+	_banner.position = _field_rect.position + Vector2(0, _field_rect.size.y * 0.3)
+	_banner.size = Vector2(_field_rect.size.x, 100)
 	hud_right.position = Vector2(_field_rect.end.x, 0)
 	hud_right.size = Vector2(vs.x - _field_rect.end.x, vs.y)
 
@@ -353,7 +373,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and sim != null and not _demo:
 		_set_paused(true)
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN and sim != null and not paused:
-		_mouse_reapply = 3
+		_mouse_fix_times = [_elapsed + 0.1, _elapsed + 0.5, _elapsed + 1.5]
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_quit()
 
@@ -478,11 +498,19 @@ func _process(delta: float) -> void:
 	_elapsed += delta
 	# The OS can ignore a cursor capture requested before the window is fully up or focused,
 	# so the mouse mode is applied again shortly after start and after regaining focus.
-	if _mouse_reapply > 0:
-		_mouse_reapply -= 1
-		if _mouse_reapply % 10 == 0 and not paused and not _demo:
+	# (Timed in seconds: at several hundred fps a frame count would be over before the window settles.)
+	if not _mouse_fix_times.is_empty() and _elapsed >= _mouse_fix_times[0]:
+		_mouse_fix_times.pop_front()
+		if not paused and not _demo:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			_update_mouse_mode()
+	if _next_after > 0.0 and _elapsed >= _next_after:
+		_next_after = 0.0
+		_change_level(1)
+	if _banner_time > 0.0:
+		_banner_time -= delta
+		_banner.modulate.a = clampf(_banner_time, 0.0, 1.0)
+		_banner.visible = _banner_time > 0.0
 	if _bench:
 		_run_bench(frame_ms)
 	_proc_end_usec = Time.get_ticks_usec()
