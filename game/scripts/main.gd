@@ -53,8 +53,6 @@ var _shot_delay: float = 6.0
 var _elapsed: float = 0.0
 var _force_windowed: bool = false
 var _last_usec: int = 0
-var _cursor_kick_at: float = 0.6     # seconds after start (or refocus) at which the pointer is shown briefly
-var _cursor_kick_until: float = -1.0 # while >= 0, the pointer is being shown and hidden again at this time
 var _banner: Label
 var _banner_time: float = 0.0
 var _next_after: float = 0.0   # test switch: go to the next level after this many seconds
@@ -85,7 +83,14 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_layout)
 	Settings.changed.connect(_on_settings_changed)
 	_layout()
-	_set_paused(false)
+	# The game opens on a start menu. Besides being the natural place to begin, this matters on
+	# Windows: capturing the pointer only hides it reliably when it follows a real click or key
+	# press, so play always begins from a button. Benchmarks and demos skip the menu.
+	if _demo:
+		_set_paused(false)
+	else:
+		pause_menu.set_start_mode(true)
+		_set_paused(true)
 	_last_usec = Time.get_ticks_usec()
 	if _bench:
 		RenderingServer.viewport_set_measure_render_time(world_viewport.get_viewport_rid(), true)
@@ -359,6 +364,8 @@ func _set_paused(p: bool) -> void:
 	paused = p
 	pause_menu.visible = p
 	_mouse_accum = Vector2.ZERO
+	if not p:
+		pause_menu.set_start_mode(false)
 	_update_mouse_mode()
 	if not p and not _no_save:
 		Settings.save_settings()
@@ -373,8 +380,6 @@ func _quit() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and sim != null and not _demo:
 		_set_paused(true)
-	elif what == NOTIFICATION_APPLICATION_FOCUS_IN and sim != null and not paused:
-		_cursor_kick_at = _elapsed + 0.3
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_quit()
 
@@ -499,23 +504,6 @@ func _process(delta: float) -> void:
 	_elapsed += delta
 	# The OS can ignore a cursor capture requested before the window is fully up or focused,
 	# so the mouse mode is applied again shortly after start and after regaining focus.
-	# Windows shows an "app is starting" ring after launch and leaves it on screen while the
-	# pointer is captured, because a captured pointer never moves and so never gets redrawn.
-	# Opening and closing the pause menu clears it, so shortly after start the game does the
-	# same thing by itself: pointer visible for a moment, nudged so Windows redraws it, then
-	# captured again. Doing both in one frame is not enough; Windows needs time in between.
-	if _cursor_kick_until >= 0.0:
-		if _elapsed >= _cursor_kick_until:
-			_cursor_kick_until = -1.0
-			_update_mouse_mode()
-		elif not paused:
-			var c := get_viewport().get_visible_rect().size * 0.5
-			Input.warp_mouse(c + Vector2(6, 6) * (1.0 if fmod(_elapsed, 0.04) < 0.02 else -1.0))
-	elif _cursor_kick_at >= 0.0 and _elapsed >= _cursor_kick_at:
-		_cursor_kick_at = -1.0
-		if not paused and not _demo:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			_cursor_kick_until = _elapsed + 0.2
 	if _next_after > 0.0 and _elapsed >= _next_after:
 		_next_after = 0.0
 		_change_level(1)

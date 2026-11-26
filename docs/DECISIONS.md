@@ -139,3 +139,11 @@ with a 240 cap, tick/frame alignment) before bosses arrive in Milestone 5.
   moves, nothing refreshes the stale image. Hiding an already hidden pointer is a no-op.
 - Fix: during play the pointer image is transparent, and once a second the mouse mode is switched to
   visible and back to captured in the same frame, which forces a real pointer change.
+
+## 2026-11-26: Start menu instead of cursor workarounds (owner's suggestion)
+
+- Four timed attempts to hide the Windows launch ring from code all failed on the owner's PC; hiding
+  only worked when it followed a real key press or click (the pause menu). The timed workarounds
+  were removed.
+- The game now opens on a start menu (the pause menu with a Start button), so play always begins from
+  a click or key press. Benchmark and demo runs skip it. This menu grows into the main menu in Milestone 4.

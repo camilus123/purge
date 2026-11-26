@@ -10,6 +10,9 @@ signal shield_selected(shield_id: String)
 signal display_changed
 
 var _sens_label: Label
+var _title: Label
+var _resume: Button
+var _restart: Button
 var _shield_ids: Array[String] = []
 
 
@@ -35,13 +38,14 @@ func build(shield_ids: Array[String], shield_names: Array[String], current_shiel
 	margin.add_child(box)
 
 	var title := Label.new()
+	_title = title
 	title.text = "PAUSED"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 30)
 	box.add_child(title)
 
-	_button(box, "Resume", func() -> void: resume_requested.emit())
-	_button(box, "Restart stage", func() -> void: restart_requested.emit())
+	_resume = _button(box, "Resume", func() -> void: resume_requested.emit())
+	_restart = _button(box, "Restart stage", func() -> void: restart_requested.emit())
 	box.add_child(HSeparator.new())
 
 	_sens_label = Label.new()
@@ -105,12 +109,22 @@ func _update_sens_label() -> void:
 	_sens_label.text = "Mouse sensitivity: %.3f" % float(Settings.values["mouse_sensitivity"])
 
 
-func _button(parent: Control, text: String, on_press: Callable) -> void:
+## Start mode is the menu shown when the game opens: same settings, but it says Start.
+func set_start_mode(on: bool) -> void:
+	_title.text = "PURGE" if on else "PAUSED"
+	_resume.text = "Start" if on else "Resume"
+	_restart.visible = not on
+	if on:
+		_resume.grab_focus.call_deferred()
+
+
+func _button(parent: Control, text: String, on_press: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.custom_minimum_size = Vector2(0, 40)
 	b.pressed.connect(on_press)
 	parent.add_child(b)
+	return b
 
 
 func _check(parent: Control, text: String, value: bool, on_toggle: Callable) -> void:
