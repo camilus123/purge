@@ -62,6 +62,33 @@ Questions, answers and decisions, newest section last. Dates are ISO (YYYY-MM-DD
 - **Mirror shield maths:** `bleed` share of incoming damage goes straight to the hull, the rest hits the
   shield; `reflect` share of what the shield absorbed is dealt to the attacker (nearest enemy if gone).
 
-## Renderer backend test (Vulkan vs Direct3D 12)
+## 2026-11-26: Renderer backend test (Vulkan vs Direct3D 12)
 
-*(Filled in at the end of Milestone 2 with measured numbers.)*
+Measured with the release build (`build\purge.exe -- --bench=8`) at 3440x1440 borderless on the
+target PC (Ryzen 9 5950X, Radeon RX 9070), uncapped, MSAA 2x, glow on. The stress scene keeps 60
+enemies alive, all firing rings, with about 500 bullets on screen.
+
+| Scene | Driver | Average fps | 1% low fps | 99th percentile frame |
+|---|---|---|---|---|
+| Stress | Vulkan | 379 to 432 | 168 to 171 | 5.8 to 5.9 ms |
+| Stress | Direct3D 12 | 463 to 491 | 183 to 199 | 5.0 to 5.5 ms |
+| Normal play | Vulkan | 670 | 265 | 3.8 ms |
+| Normal play | Direct3D 12 | 784 | 306 | 3.3 ms |
+
+**Decision: Direct3D 12 is the default driver on Windows** (`rendering_device/driver.windows`).
+Vulkan remains available with `--rendering-driver vulkan`.
+
+Open performance item: normal play is far above 240 fps, but in the stress scene about 2 to 6% of
+frames still take longer than 4.6 ms, so the "stable 240 in the heaviest scene" target is not met
+yet. GPU time is under 0.5 ms and game scripts average 0.7 ms per frame, so the long frames come
+from the engine's render/present step, not from gameplay code. To be profiled further (frame pacing
+with a 240 cap, tick/frame alignment) before bosses arrive in Milestone 5.
+
+## 2026-11-26: Other Milestone 2 decisions
+
+- The HUD is built from retained nodes that only change when a value changes; drawing text every
+  frame in script cost over 2 ms on redraw frames.
+- Bullets upload only position and velocity; the shader orients and stretches the sprite and steps
+  it back along its velocity for render interpolation.
+- Tests live in `game/tests/` (they must be inside the Godot project to run); `tools/test.ps1` runs them.
+- Command-line switches (`--windowed`, `--set=key=value`, `--bench`) never write to the saved settings.

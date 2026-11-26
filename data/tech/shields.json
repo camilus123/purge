@@ -1,0 +1,10 @@
+{
+  "items": [
+    { "id": "shield.bulwark.t1", "name": "Bulwark I", "category": "shield", "branch": "bulwark", "tier": 1, "cost": 600,
+      "capacity": 200, "recharge": 8, "delay": 3.0, "reflect": 0.0, "bleed": 0.0, "visual": "fx.shield.bulwark" },
+    { "id": "shield.flicker.t1", "name": "Flicker I", "category": "shield", "branch": "flicker", "tier": 1, "cost": 600,
+      "capacity": 60, "recharge": 30, "delay": 0.6, "reflect": 0.0, "bleed": 0.0, "visual": "fx.shield.flicker" },
+    { "id": "shield.mirror.t1", "name": "Mirror I", "category": "shield", "branch": "mirror", "tier": 1, "cost": 800,
+      "capacity": 110, "recharge": 14, "delay": 1.5, "reflect": 0.25, "bleed": 0.2, "visual": "fx.shield.mirror" }
+  ]
+}

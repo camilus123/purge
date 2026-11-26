@@ -1,0 +1,12 @@
+{
+  "_comment": "Milestone 2 only uses starting_loadout. The full economy arrives in Milestone 4.",
+  "starting_credits": 3000,
+  "sell_refund": 0.75,
+  "starting_loadout": {
+    "reactor": "reactor.basic.t1",
+    "shield": "shield.bulwark.t1",
+    "armor": "armor.standard.t1",
+    "weapon1": "weapon.laser.t1",
+    "weapon2": "weapon.chaingun.t1"
+  }
+}

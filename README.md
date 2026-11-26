@@ -6,14 +6,22 @@ and spend credits on a branching tech tree between stages.
 
 Built with **Godot 4.7.2** (standard build, GDScript). Windows x64.
 
-## Run from source
+## Run, build, test
 
 ```powershell
-& "H:\temp\godot\Godot_v4.7.2-stable_win64.exe" --path game
+.	oolsun.ps1              # play from source (borderless fullscreen)
+.	oolsun.ps1 --windowed   # play in a window
+.	oolsuild.ps1            # export build\purge.exe with the data folder beside it
+.	ools	est.ps1             # headless rule tests
+.	oolsun.ps1 --bench      # stress benchmark, prints a BENCH line
 ```
 
-Open the editor with `--path game -e`. Extra switches go after `--`, for example
-`--path game -- --windowed`.
+The scripts expect Godot at `H:	emp\godot\Godot_v4.7.2-stable_win64_console.exe`; pass `-Godot <path>`
+to use another copy. `--set=key=value` overrides one setting for a single run (for example
+`--set=fps_cap=240`); `-Driver vulkan` on `run.ps1` switches the renderer.
+
+In game: mouse to fly, LMB and RMB fire, wheel shifts power, Esc pauses (sensitivity, mouse mode
+and shield choice are in the pause menu), F3 shows performance, F4 stress test, F5 invincible.
 
 ## Layout
 
@@ -23,8 +31,8 @@ Open the editor with `--path game -e`. Extra switches go after `--`, for example
 | `data/` | All gameplay data as JSON (tech, enemies, levels, economy) |
 | `assets/` | Models, textures, audio (Git LFS) and `CREDITS.md` |
 | `mods/` | Local overrides for data and assets |
-| `tools/` | Data validator and balance helpers |
-| `tests/` | Automated tests |
+| `tools/` | Run, build and test scripts (later: data validator, balance helpers) |
+| `game/tests/` | Automated tests |
 | `docs/` | `DESIGN.md`, `DECISIONS.md`, `MODDING.md` |
 
 ## Documents

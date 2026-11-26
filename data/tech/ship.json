@@ -1,0 +1,13 @@
+{
+  "_comment": "Base hull. speed in units/s, acceleration in units/s^2. Playfield is 90 x 120 units.",
+  "id": "ship.player.default",
+  "name": "Courier Hull",
+  "max_speed": 240,
+  "acceleration": 4000,
+  "follow_gain": 40,
+  "hitbox_radius": 1.5,
+  "ram_damage": 60,
+  "respawn_invulnerable_time": 2.0,
+  "muzzles": [[-1.6, -3.0], [1.6, -3.0]],
+  "model": "ship.player.default"
+}
