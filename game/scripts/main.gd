@@ -508,13 +508,15 @@ func _process(delta: float) -> void:
 	_elapsed += delta
 	# The OS can ignore a cursor capture requested before the window is fully up or focused,
 	# so the mouse mode is applied again shortly after start and after regaining focus.
-	# It is asserted again every second for as long as the game is being played; going through
-	# the hidden mode first forces the engine to hide the pointer again without ever showing it.
+	# Windows shows its own "app is starting" ring for several seconds after launch and leaves it
+	# on screen until the pointer image really changes. Asking to hide an already hidden pointer
+	# changes nothing, so once a second the mode goes visible (with a transparent pointer image,
+	# see _update_mouse_mode) and straight back to captured within the same frame.
 	_mouse_reassert -= delta
 	if _mouse_reassert <= 0.0:
 		_mouse_reassert = 1.0
 		if not paused and not _demo:
-			Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			_update_mouse_mode()
 	if _next_after > 0.0 and _elapsed >= _next_after:
 		_next_after = 0.0
