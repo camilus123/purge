@@ -1,0 +1,21 @@
+{
+  "_comment": "power_scaling: [value at 0% weapon power, value at 100% weapon power]. fire_rate in shots/s.",
+  "items": [
+    { "id": "weapon.laser.t1", "name": "Pulse Laser I", "category": "weapon", "branch": "laser", "tier": 1, "cost": 0,
+      "class": "energy", "damage_type": "energy",
+      "damage": 14, "fire_rate": 9, "projectile_speed": 260, "projectiles": 1, "spread_deg": 0, "random_spread_deg": 0,
+      "pierce": 0, "radius": 1.0, "lifetime": 1.0,
+      "energy_per_shot": 9, "heat_per_shot": 0, "heat_capacity": 0, "heat_dissipation": 0, "overheat_recover": 0.4,
+      "spin_up": 0, "spin_min_rate": 1.0,
+      "power_scaling": { "damage": [0.6, 1.5], "fire_rate": [0.8, 1.25] },
+      "projectile_visual": "proj.laser.t1", "sound": "sfx.weapon.laser" },
+    { "id": "weapon.chaingun.t1", "name": "Chain Gun I", "category": "weapon", "branch": "chaingun", "tier": 1, "cost": 0,
+      "class": "kinetic", "damage_type": "kinetic",
+      "damage": 5, "fire_rate": 24, "projectile_speed": 320, "projectiles": 1, "spread_deg": 0, "random_spread_deg": 7,
+      "pierce": 0, "radius": 0.7, "lifetime": 0.8,
+      "energy_per_shot": 0.8, "heat_per_shot": 1.0, "heat_capacity": 100, "heat_dissipation": 30, "overheat_recover": 0.4,
+      "spin_up": 0.7, "spin_min_rate": 0.25,
+      "power_scaling": { "damage": [0.95, 1.05], "fire_rate": [0.95, 1.05] },
+      "projectile_visual": "proj.chaingun.t1", "sound": "sfx.weapon.chaingun" }
+  ]
+}

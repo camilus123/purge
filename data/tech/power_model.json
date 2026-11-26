@@ -1,0 +1,9 @@
+{
+  "_comment": "Numbers for the reactor power split. Formulas are described in docs/DECISIONS.md.",
+  "default_shield_share": 0.5,
+  "step": 0.1,
+  "shield_recharge_share_scale": 2.0,
+  "reference_reactor_output": 100,
+  "starved_fire_rate_mult": 0.35,
+  "damage_types": ["energy", "kinetic", "explosive"]
+}
