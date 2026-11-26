@@ -1,21 +1,1388 @@
 {
-  "_comment": "power_scaling: [value at 0% weapon power, value at 100% weapon power]. fire_rate in shots/s.",
+  "_comment": "Primary weapons. power_scaling: [multiplier at 0% weapon power, at 100%]. For beams, damage and energy_per_shot are per second. behaviour: projectile, beam or rail.",
   "items": [
-    { "id": "weapon.laser.t1", "name": "Pulse Laser I", "category": "weapon", "branch": "laser", "tier": 1, "cost": 0,
-      "class": "energy", "damage_type": "energy",
-      "damage": 14, "fire_rate": 9, "projectile_speed": 260, "projectiles": 1, "spread_deg": 0, "random_spread_deg": 0,
-      "pierce": 0, "radius": 1.0, "lifetime": 1.0,
-      "energy_per_shot": 9, "heat_per_shot": 0, "heat_capacity": 0, "heat_dissipation": 0, "overheat_recover": 0.4,
-      "spin_up": 0, "spin_min_rate": 1.0,
-      "power_scaling": { "damage": [0.6, 1.5], "fire_rate": [0.8, 1.25] },
-      "projectile_visual": "proj.laser.t1", "sound": "sfx.weapon.laser" },
-    { "id": "weapon.chaingun.t1", "name": "Chain Gun I", "category": "weapon", "branch": "chaingun", "tier": 1, "cost": 0,
-      "class": "kinetic", "damage_type": "kinetic",
-      "damage": 5, "fire_rate": 24, "projectile_speed": 320, "projectiles": 1, "spread_deg": 0, "random_spread_deg": 7,
-      "pierce": 0, "radius": 0.7, "lifetime": 0.8,
-      "energy_per_shot": 0.8, "heat_per_shot": 1.0, "heat_capacity": 100, "heat_dissipation": 30, "overheat_recover": 0.4,
-      "spin_up": 0.7, "spin_min_rate": 0.25,
-      "power_scaling": { "damage": [0.95, 1.05], "fire_rate": [0.95, 1.05] },
-      "projectile_visual": "proj.chaingun.t1", "sound": "sfx.weapon.chaingun" }
+    {
+      "id": "weapon.laser.t1",
+      "name": "Pulse Laser I",
+      "description": "Precise single-target damage. Fast bolts that hit hard when weapons get more power, but use a lot of energy.",
+      "category": "weapon",
+      "branch": "laser",
+      "tier": 1,
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "projectile",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 1.0,
+      "lifetime": 0.6,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 260,
+      "projectile_visual": "proj.laser.bolt",
+      "sound": "sfx.weapon.laser",
+      "power_scaling": {
+        "damage": [
+          0.6,
+          1.5
+        ],
+        "fire_rate": [
+          0.8,
+          1.25
+        ]
+      },
+      "cost": 600,
+      "damage": 14,
+      "fire_rate": 9,
+      "energy_per_shot": 9
+    },
+    {
+      "id": "weapon.laser.t2",
+      "name": "Pulse Laser II",
+      "description": "Precise single-target damage. Fast bolts that hit hard when weapons get more power, but use a lot of energy.",
+      "category": "weapon",
+      "branch": "laser",
+      "tier": 2,
+      "requires": [
+        "weapon.laser.t1"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "projectile",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 1.0,
+      "lifetime": 0.6,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 260,
+      "projectile_visual": "proj.laser.bolt",
+      "sound": "sfx.weapon.laser",
+      "power_scaling": {
+        "damage": [
+          0.6,
+          1.5
+        ],
+        "fire_rate": [
+          0.8,
+          1.25
+        ]
+      },
+      "cost": 1500,
+      "damage": 18,
+      "fire_rate": 10,
+      "energy_per_shot": 10
+    },
+    {
+      "id": "weapon.laser.t3",
+      "name": "Twin Pulse Laser",
+      "description": "Precise single-target damage. Fast bolts that hit hard when weapons get more power, but use a lot of energy. Fires twin bolts.",
+      "category": "weapon",
+      "branch": "laser",
+      "tier": 3,
+      "requires": [
+        "weapon.laser.t2"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "projectile",
+      "projectiles": 2,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 1.6,
+      "pierce": 0,
+      "radius": 1.0,
+      "lifetime": 0.6,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 260,
+      "projectile_visual": "proj.laser.bolt",
+      "sound": "sfx.weapon.laser",
+      "power_scaling": {
+        "damage": [
+          0.6,
+          1.5
+        ],
+        "fire_rate": [
+          0.8,
+          1.25
+        ]
+      },
+      "cost": 2800,
+      "damage": 16,
+      "fire_rate": 10,
+      "energy_per_shot": 16
+    },
+    {
+      "id": "weapon.laser.t4",
+      "name": "Lance Beam",
+      "description": "Precise single-target damage. Fast bolts that hit hard when weapons get more power, but use a lot of energy. Becomes a continuous beam: damage per second, energy per second.",
+      "category": "weapon",
+      "branch": "laser",
+      "tier": 4,
+      "requires": [
+        "weapon.laser.t3"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "beam",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 1.0,
+      "lifetime": 0.6,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 260,
+      "projectile_visual": "proj.laser.bolt",
+      "sound": "sfx.weapon.beam",
+      "power_scaling": {
+        "damage": [
+          0.5,
+          1.6
+        ],
+        "fire_rate": [
+          1,
+          1
+        ]
+      },
+      "range": 130,
+      "beam_width": 1.2,
+      "beam_visual": "proj.laser.beam",
+      "fire_rate": 10,
+      "cost": 4600,
+      "damage": 130,
+      "energy_per_shot": 70
+    },
+    {
+      "id": "weapon.laser.t5",
+      "name": "Sunlance Beam",
+      "description": "Precise single-target damage. Fast bolts that hit hard when weapons get more power, but use a lot of energy. Wider beam that burns through one enemy.",
+      "category": "weapon",
+      "branch": "laser",
+      "tier": 5,
+      "requires": [
+        "weapon.laser.t4"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "beam",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 1,
+      "radius": 1.0,
+      "lifetime": 0.6,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 260,
+      "projectile_visual": "proj.laser.bolt",
+      "sound": "sfx.weapon.beam",
+      "power_scaling": {
+        "damage": [
+          0.5,
+          1.6
+        ],
+        "fire_rate": [
+          1,
+          1
+        ]
+      },
+      "range": 130,
+      "beam_width": 2.0,
+      "beam_visual": "proj.laser.beam.heavy",
+      "fire_rate": 10,
+      "cost": 7200,
+      "damage": 200,
+      "energy_per_shot": 95
+    },
+    {
+      "id": "weapon.particle.t1",
+      "name": "Scatter Emitter I",
+      "description": "Area coverage. A fan of charged particles that widens with every tier.",
+      "category": "weapon",
+      "branch": "particle",
+      "tier": 1,
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "projectile",
+      "projectiles": 3,
+      "spread_deg": 22,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 1.0,
+      "lifetime": 0.75,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 200,
+      "projectile_visual": "proj.particle",
+      "sound": "sfx.weapon.particle",
+      "power_scaling": {
+        "damage": [
+          0.6,
+          1.4
+        ],
+        "fire_rate": [
+          0.85,
+          1.2
+        ]
+      },
+      "cost": 700,
+      "damage": 8,
+      "fire_rate": 5,
+      "energy_per_shot": 12
+    },
+    {
+      "id": "weapon.particle.t2",
+      "name": "Scatter Emitter II",
+      "description": "Area coverage. A fan of charged particles that widens with every tier.",
+      "category": "weapon",
+      "branch": "particle",
+      "tier": 2,
+      "requires": [
+        "weapon.particle.t1"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "projectile",
+      "projectiles": 4,
+      "spread_deg": 28,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 1.0,
+      "lifetime": 0.75,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 200,
+      "projectile_visual": "proj.particle",
+      "sound": "sfx.weapon.particle",
+      "power_scaling": {
+        "damage": [
+          0.6,
+          1.4
+        ],
+        "fire_rate": [
+          0.85,
+          1.2
+        ]
+      },
+      "cost": 1600,
+      "damage": 9,
+      "fire_rate": 5.5,
+      "energy_per_shot": 15
+    },
+    {
+      "id": "weapon.particle.t3",
+      "name": "Scatter Emitter III",
+      "description": "Area coverage. A fan of charged particles that widens with every tier.",
+      "category": "weapon",
+      "branch": "particle",
+      "tier": 3,
+      "requires": [
+        "weapon.particle.t2"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "projectile",
+      "projectiles": 5,
+      "spread_deg": 34,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 1.0,
+      "lifetime": 0.75,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 200,
+      "projectile_visual": "proj.particle",
+      "sound": "sfx.weapon.particle",
+      "power_scaling": {
+        "damage": [
+          0.6,
+          1.4
+        ],
+        "fire_rate": [
+          0.85,
+          1.2
+        ]
+      },
+      "cost": 3000,
+      "damage": 10,
+      "fire_rate": 6,
+      "energy_per_shot": 18
+    },
+    {
+      "id": "weapon.particle.t4",
+      "name": "Scatter Emitter IV",
+      "description": "Area coverage. A fan of charged particles that widens with every tier. Particles pass through one enemy.",
+      "category": "weapon",
+      "branch": "particle",
+      "tier": 4,
+      "requires": [
+        "weapon.particle.t3"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "projectile",
+      "projectiles": 6,
+      "spread_deg": 40,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 1,
+      "radius": 1.0,
+      "lifetime": 0.75,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 200,
+      "projectile_visual": "proj.particle",
+      "sound": "sfx.weapon.particle",
+      "power_scaling": {
+        "damage": [
+          0.6,
+          1.4
+        ],
+        "fire_rate": [
+          0.85,
+          1.2
+        ]
+      },
+      "cost": 4800,
+      "damage": 11,
+      "fire_rate": 6.5,
+      "energy_per_shot": 22
+    },
+    {
+      "id": "weapon.particle.t5",
+      "name": "Scatter Emitter V",
+      "description": "Area coverage. A fan of charged particles that widens with every tier. Particles pass through one enemy.",
+      "category": "weapon",
+      "branch": "particle",
+      "tier": 5,
+      "requires": [
+        "weapon.particle.t4"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "projectile",
+      "projectiles": 8,
+      "spread_deg": 48,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 1,
+      "radius": 1.0,
+      "lifetime": 0.75,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 200,
+      "projectile_visual": "proj.particle",
+      "sound": "sfx.weapon.particle",
+      "power_scaling": {
+        "damage": [
+          0.6,
+          1.4
+        ],
+        "fire_rate": [
+          0.85,
+          1.2
+        ]
+      },
+      "cost": 7400,
+      "damage": 12,
+      "fire_rate": 7,
+      "energy_per_shot": 28
+    },
+    {
+      "id": "weapon.phaser.t1",
+      "name": "Arc Phaser I",
+      "description": "Crowd control. A short beam that sweeps from side to side and cuts through several enemies. Damage and energy are per second.",
+      "category": "weapon",
+      "branch": "phaser",
+      "tier": 1,
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "beam",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 2,
+      "radius": 1.0,
+      "lifetime": 1.0,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "range": 90,
+      "beam_width": 1.0,
+      "beam_visual": "proj.phaser.beam",
+      "sound": "sfx.weapon.beam",
+      "fire_rate": 10,
+      "power_scaling": {
+        "damage": [
+          0.5,
+          1.5
+        ],
+        "fire_rate": [
+          1,
+          1
+        ]
+      },
+      "projectile_visual": "proj.phaser.beam",
+      "projectile_speed": 1,
+      "cost": 900,
+      "damage": 45,
+      "sweep_deg": 30,
+      "sweep_speed": 3.0,
+      "energy_per_shot": 50
+    },
+    {
+      "id": "weapon.phaser.t2",
+      "name": "Arc Phaser II",
+      "description": "Crowd control. A short beam that sweeps from side to side and cuts through several enemies. Damage and energy are per second.",
+      "category": "weapon",
+      "branch": "phaser",
+      "tier": 2,
+      "requires": [
+        "weapon.phaser.t1"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "beam",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 3,
+      "radius": 1.0,
+      "lifetime": 1.0,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "range": 90,
+      "beam_width": 1.0,
+      "beam_visual": "proj.phaser.beam",
+      "sound": "sfx.weapon.beam",
+      "fire_rate": 10,
+      "power_scaling": {
+        "damage": [
+          0.5,
+          1.5
+        ],
+        "fire_rate": [
+          1,
+          1
+        ]
+      },
+      "projectile_visual": "proj.phaser.beam",
+      "projectile_speed": 1,
+      "cost": 1900,
+      "damage": 60,
+      "sweep_deg": 36,
+      "sweep_speed": 3.2,
+      "energy_per_shot": 55
+    },
+    {
+      "id": "weapon.phaser.t3",
+      "name": "Arc Phaser III",
+      "description": "Crowd control. A short beam that sweeps from side to side and cuts through several enemies. Damage and energy are per second.",
+      "category": "weapon",
+      "branch": "phaser",
+      "tier": 3,
+      "requires": [
+        "weapon.phaser.t2"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "beam",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 4,
+      "radius": 1.0,
+      "lifetime": 1.0,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "range": 100,
+      "beam_width": 1.0,
+      "beam_visual": "proj.phaser.beam",
+      "sound": "sfx.weapon.beam",
+      "fire_rate": 10,
+      "power_scaling": {
+        "damage": [
+          0.5,
+          1.5
+        ],
+        "fire_rate": [
+          1,
+          1
+        ]
+      },
+      "projectile_visual": "proj.phaser.beam",
+      "projectile_speed": 1,
+      "cost": 3300,
+      "damage": 78,
+      "sweep_deg": 44,
+      "sweep_speed": 3.4,
+      "energy_per_shot": 60
+    },
+    {
+      "id": "weapon.phaser.t4",
+      "name": "Arc Phaser IV",
+      "description": "Crowd control. A short beam that sweeps from side to side and cuts through several enemies. Damage and energy are per second.",
+      "category": "weapon",
+      "branch": "phaser",
+      "tier": 4,
+      "requires": [
+        "weapon.phaser.t3"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "beam",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 5,
+      "radius": 1.0,
+      "lifetime": 1.0,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "range": 100,
+      "beam_width": 1.4,
+      "beam_visual": "proj.phaser.beam",
+      "sound": "sfx.weapon.beam",
+      "fire_rate": 10,
+      "power_scaling": {
+        "damage": [
+          0.5,
+          1.5
+        ],
+        "fire_rate": [
+          1,
+          1
+        ]
+      },
+      "projectile_visual": "proj.phaser.beam",
+      "projectile_speed": 1,
+      "cost": 5200,
+      "damage": 98,
+      "sweep_deg": 52,
+      "sweep_speed": 3.6,
+      "energy_per_shot": 66
+    },
+    {
+      "id": "weapon.phaser.t5",
+      "name": "Arc Phaser V",
+      "description": "Crowd control. A short beam that sweeps from side to side and cuts through several enemies. Damage and energy are per second.",
+      "category": "weapon",
+      "branch": "phaser",
+      "tier": 5,
+      "requires": [
+        "weapon.phaser.t4"
+      ],
+      "class": "energy",
+      "damage_type": "energy",
+      "behaviour": "beam",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 7,
+      "radius": 1.0,
+      "lifetime": 1.0,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "range": 110,
+      "beam_width": 1.6,
+      "beam_visual": "proj.phaser.beam",
+      "sound": "sfx.weapon.beam",
+      "fire_rate": 10,
+      "power_scaling": {
+        "damage": [
+          0.5,
+          1.5
+        ],
+        "fire_rate": [
+          1,
+          1
+        ]
+      },
+      "projectile_visual": "proj.phaser.beam",
+      "projectile_speed": 1,
+      "cost": 7800,
+      "damage": 122,
+      "sweep_deg": 60,
+      "sweep_speed": 3.8,
+      "energy_per_shot": 72
+    },
+    {
+      "id": "weapon.railgun.t1",
+      "name": "Coil Rail I",
+      "description": "Heavy hitter. Hold to charge, then an instant shot pierces everything in a line. Slow, but superb against armored targets.",
+      "category": "weapon",
+      "branch": "railgun",
+      "tier": 1,
+      "class": "kinetic",
+      "damage_type": "kinetic",
+      "behaviour": "rail",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 3,
+      "radius": 1.0,
+      "lifetime": 1.0,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "range": 140,
+      "beam_width": 0.8,
+      "beam_visual": "proj.rail.trace",
+      "projectile_visual": "proj.rail.trace",
+      "projectile_speed": 1,
+      "sound": "sfx.weapon.rail",
+      "power_scaling": {
+        "damage": [
+          0.9,
+          1.15
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 900,
+      "damage": 110,
+      "fire_rate": 1.1,
+      "charge_time": 0.45,
+      "energy_per_shot": 20
+    },
+    {
+      "id": "weapon.railgun.t2",
+      "name": "Coil Rail II",
+      "description": "Heavy hitter. Hold to charge, then an instant shot pierces everything in a line. Slow, but superb against armored targets.",
+      "category": "weapon",
+      "branch": "railgun",
+      "tier": 2,
+      "requires": [
+        "weapon.railgun.t1"
+      ],
+      "class": "kinetic",
+      "damage_type": "kinetic",
+      "behaviour": "rail",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 4,
+      "radius": 1.0,
+      "lifetime": 1.0,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "range": 140,
+      "beam_width": 0.8,
+      "beam_visual": "proj.rail.trace",
+      "projectile_visual": "proj.rail.trace",
+      "projectile_speed": 1,
+      "sound": "sfx.weapon.rail",
+      "power_scaling": {
+        "damage": [
+          0.9,
+          1.15
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 2000,
+      "damage": 150,
+      "fire_rate": 1.2,
+      "charge_time": 0.42,
+      "energy_per_shot": 22
+    },
+    {
+      "id": "weapon.railgun.t3",
+      "name": "Coil Rail III",
+      "description": "Heavy hitter. Hold to charge, then an instant shot pierces everything in a line. Slow, but superb against armored targets.",
+      "category": "weapon",
+      "branch": "railgun",
+      "tier": 3,
+      "requires": [
+        "weapon.railgun.t2"
+      ],
+      "class": "kinetic",
+      "damage_type": "kinetic",
+      "behaviour": "rail",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 5,
+      "radius": 1.0,
+      "lifetime": 1.0,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "range": 140,
+      "beam_width": 0.8,
+      "beam_visual": "proj.rail.trace",
+      "projectile_visual": "proj.rail.trace",
+      "projectile_speed": 1,
+      "sound": "sfx.weapon.rail",
+      "power_scaling": {
+        "damage": [
+          0.9,
+          1.15
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 3500,
+      "damage": 200,
+      "fire_rate": 1.3,
+      "charge_time": 0.38,
+      "energy_per_shot": 24
+    },
+    {
+      "id": "weapon.railgun.t4",
+      "name": "Coil Rail IV",
+      "description": "Heavy hitter. Hold to charge, then an instant shot pierces everything in a line. Slow, but superb against armored targets.",
+      "category": "weapon",
+      "branch": "railgun",
+      "tier": 4,
+      "requires": [
+        "weapon.railgun.t3"
+      ],
+      "class": "kinetic",
+      "damage_type": "kinetic",
+      "behaviour": "rail",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 7,
+      "radius": 1.0,
+      "lifetime": 1.0,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "range": 140,
+      "beam_width": 0.8,
+      "beam_visual": "proj.rail.trace",
+      "projectile_visual": "proj.rail.trace",
+      "projectile_speed": 1,
+      "sound": "sfx.weapon.rail",
+      "power_scaling": {
+        "damage": [
+          0.9,
+          1.15
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 5400,
+      "damage": 265,
+      "fire_rate": 1.4,
+      "charge_time": 0.34,
+      "energy_per_shot": 26
+    },
+    {
+      "id": "weapon.railgun.t5",
+      "name": "Coil Rail V",
+      "description": "Heavy hitter. Hold to charge, then an instant shot pierces everything in a line. Slow, but superb against armored targets.",
+      "category": "weapon",
+      "branch": "railgun",
+      "tier": 5,
+      "requires": [
+        "weapon.railgun.t4"
+      ],
+      "class": "kinetic",
+      "damage_type": "kinetic",
+      "behaviour": "rail",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 0,
+      "spacing": 0,
+      "pierce": 10,
+      "radius": 1.0,
+      "lifetime": 1.0,
+      "splash": 0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "range": 140,
+      "beam_width": 1.2,
+      "beam_visual": "proj.rail.trace",
+      "projectile_visual": "proj.rail.trace",
+      "projectile_speed": 1,
+      "sound": "sfx.weapon.rail",
+      "power_scaling": {
+        "damage": [
+          0.9,
+          1.15
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 8000,
+      "damage": 340,
+      "fire_rate": 1.5,
+      "charge_time": 0.3,
+      "energy_per_shot": 28
+    },
+    {
+      "id": "weapon.chaingun.t1",
+      "name": "Chain Gun I",
+      "description": "Sustained fire. Needs a moment to spin up, sprays a little, and overheats if you hold the trigger too long. Barely uses energy.",
+      "category": "weapon",
+      "branch": "chaingun",
+      "tier": 1,
+      "class": "kinetic",
+      "damage_type": "kinetic",
+      "behaviour": "projectile",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 7,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 0.7,
+      "lifetime": 0.8,
+      "splash": 0,
+      "heat_per_shot": 1.0,
+      "heat_capacity": 100,
+      "heat_dissipation": 30,
+      "overheat_recover": 0.4,
+      "spin_up": 0.7,
+      "spin_min_rate": 0.25,
+      "projectile_speed": 320,
+      "projectile_visual": "proj.chaingun",
+      "sound": "sfx.weapon.chaingun",
+      "power_scaling": {
+        "damage": [
+          0.95,
+          1.05
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 700,
+      "damage": 5,
+      "fire_rate": 24,
+      "energy_per_shot": 0.8
+    },
+    {
+      "id": "weapon.chaingun.t2",
+      "name": "Chain Gun II",
+      "description": "Sustained fire. Needs a moment to spin up, sprays a little, and overheats if you hold the trigger too long. Barely uses energy.",
+      "category": "weapon",
+      "branch": "chaingun",
+      "tier": 2,
+      "requires": [
+        "weapon.chaingun.t1"
+      ],
+      "class": "kinetic",
+      "damage_type": "kinetic",
+      "behaviour": "projectile",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 6.5,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 0.7,
+      "lifetime": 0.8,
+      "splash": 0,
+      "heat_per_shot": 1.0,
+      "heat_capacity": 120,
+      "heat_dissipation": 34,
+      "overheat_recover": 0.4,
+      "spin_up": 0.65,
+      "spin_min_rate": 0.25,
+      "projectile_speed": 320,
+      "projectile_visual": "proj.chaingun",
+      "sound": "sfx.weapon.chaingun",
+      "power_scaling": {
+        "damage": [
+          0.95,
+          1.05
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 1600,
+      "damage": 6,
+      "fire_rate": 27,
+      "energy_per_shot": 0.8
+    },
+    {
+      "id": "weapon.chaingun.t3",
+      "name": "Chain Gun III",
+      "description": "Sustained fire. Needs a moment to spin up, sprays a little, and overheats if you hold the trigger too long. Barely uses energy.",
+      "category": "weapon",
+      "branch": "chaingun",
+      "tier": 3,
+      "requires": [
+        "weapon.chaingun.t2"
+      ],
+      "class": "kinetic",
+      "damage_type": "kinetic",
+      "behaviour": "projectile",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 6,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 0.7,
+      "lifetime": 0.8,
+      "splash": 0,
+      "heat_per_shot": 1.0,
+      "heat_capacity": 140,
+      "heat_dissipation": 38,
+      "overheat_recover": 0.4,
+      "spin_up": 0.6,
+      "spin_min_rate": 0.3,
+      "projectile_speed": 320,
+      "projectile_visual": "proj.chaingun",
+      "sound": "sfx.weapon.chaingun",
+      "power_scaling": {
+        "damage": [
+          0.95,
+          1.05
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 2900,
+      "damage": 7,
+      "fire_rate": 30,
+      "energy_per_shot": 0.9
+    },
+    {
+      "id": "weapon.chaingun.t4",
+      "name": "Chain Gun IV",
+      "description": "Sustained fire. Needs a moment to spin up, sprays a little, and overheats if you hold the trigger too long. Barely uses energy. Twin barrels.",
+      "category": "weapon",
+      "branch": "chaingun",
+      "tier": 4,
+      "requires": [
+        "weapon.chaingun.t3"
+      ],
+      "class": "kinetic",
+      "damage_type": "kinetic",
+      "behaviour": "projectile",
+      "projectiles": 2,
+      "spread_deg": 0,
+      "random_spread_deg": 5.5,
+      "spacing": 1.0,
+      "pierce": 0,
+      "radius": 0.7,
+      "lifetime": 0.8,
+      "splash": 0,
+      "heat_per_shot": 1.6,
+      "heat_capacity": 160,
+      "heat_dissipation": 44,
+      "overheat_recover": 0.4,
+      "spin_up": 0.55,
+      "spin_min_rate": 0.3,
+      "projectile_speed": 320,
+      "projectile_visual": "proj.chaingun",
+      "sound": "sfx.weapon.chaingun",
+      "power_scaling": {
+        "damage": [
+          0.95,
+          1.05
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 4700,
+      "damage": 7,
+      "fire_rate": 34,
+      "energy_per_shot": 1.2
+    },
+    {
+      "id": "weapon.chaingun.t5",
+      "name": "Chain Gun V",
+      "description": "Sustained fire. Needs a moment to spin up, sprays a little, and overheats if you hold the trigger too long. Barely uses energy. Twin barrels.",
+      "category": "weapon",
+      "branch": "chaingun",
+      "tier": 5,
+      "requires": [
+        "weapon.chaingun.t4"
+      ],
+      "class": "kinetic",
+      "damage_type": "kinetic",
+      "behaviour": "projectile",
+      "projectiles": 2,
+      "spread_deg": 0,
+      "random_spread_deg": 5,
+      "spacing": 1.0,
+      "pierce": 0,
+      "radius": 0.7,
+      "lifetime": 0.8,
+      "splash": 0,
+      "heat_per_shot": 1.6,
+      "heat_capacity": 190,
+      "heat_dissipation": 50,
+      "overheat_recover": 0.4,
+      "spin_up": 0.5,
+      "spin_min_rate": 0.35,
+      "projectile_speed": 320,
+      "projectile_visual": "proj.chaingun",
+      "sound": "sfx.weapon.chaingun",
+      "power_scaling": {
+        "damage": [
+          0.95,
+          1.05
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 7200,
+      "damage": 8,
+      "fire_rate": 38,
+      "energy_per_shot": 1.2
+    },
+    {
+      "id": "weapon.autocannon.t1",
+      "name": "Flak Cannon I",
+      "description": "Versatile. Medium-rate explosive shells that burst on impact and damage everything nearby.",
+      "category": "weapon",
+      "branch": "autocannon",
+      "tier": 1,
+      "class": "kinetic",
+      "damage_type": "explosive",
+      "behaviour": "projectile",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 2,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 1.1,
+      "lifetime": 1.0,
+      "splash": 4.0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 170,
+      "projectile_visual": "proj.autocannon",
+      "sound": "sfx.weapon.autocannon",
+      "power_scaling": {
+        "damage": [
+          0.9,
+          1.15
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 800,
+      "damage": 22,
+      "fire_rate": 3.5,
+      "energy_per_shot": 3
+    },
+    {
+      "id": "weapon.autocannon.t2",
+      "name": "Flak Cannon II",
+      "description": "Versatile. Medium-rate explosive shells that burst on impact and damage everything nearby.",
+      "category": "weapon",
+      "branch": "autocannon",
+      "tier": 2,
+      "requires": [
+        "weapon.autocannon.t1"
+      ],
+      "class": "kinetic",
+      "damage_type": "explosive",
+      "behaviour": "projectile",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 2,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 1.1,
+      "lifetime": 1.0,
+      "splash": 4.6,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 170,
+      "projectile_visual": "proj.autocannon",
+      "sound": "sfx.weapon.autocannon",
+      "power_scaling": {
+        "damage": [
+          0.9,
+          1.15
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 1700,
+      "damage": 28,
+      "fire_rate": 3.8,
+      "energy_per_shot": 3
+    },
+    {
+      "id": "weapon.autocannon.t3",
+      "name": "Flak Cannon III",
+      "description": "Versatile. Medium-rate explosive shells that burst on impact and damage everything nearby.",
+      "category": "weapon",
+      "branch": "autocannon",
+      "tier": 3,
+      "requires": [
+        "weapon.autocannon.t2"
+      ],
+      "class": "kinetic",
+      "damage_type": "explosive",
+      "behaviour": "projectile",
+      "projectiles": 1,
+      "spread_deg": 0,
+      "random_spread_deg": 2,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 1.1,
+      "lifetime": 1.0,
+      "splash": 5.2,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 170,
+      "projectile_visual": "proj.autocannon",
+      "sound": "sfx.weapon.autocannon",
+      "power_scaling": {
+        "damage": [
+          0.9,
+          1.15
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 3100,
+      "damage": 34,
+      "fire_rate": 4.2,
+      "energy_per_shot": 3.5
+    },
+    {
+      "id": "weapon.autocannon.t4",
+      "name": "Flak Cannon IV",
+      "description": "Versatile. Medium-rate explosive shells that burst on impact and damage everything nearby. Fires two shells.",
+      "category": "weapon",
+      "branch": "autocannon",
+      "tier": 4,
+      "requires": [
+        "weapon.autocannon.t3"
+      ],
+      "class": "kinetic",
+      "damage_type": "explosive",
+      "behaviour": "projectile",
+      "projectiles": 2,
+      "spread_deg": 6,
+      "random_spread_deg": 2,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 1.1,
+      "lifetime": 1.0,
+      "splash": 6.0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 170,
+      "projectile_visual": "proj.autocannon",
+      "sound": "sfx.weapon.autocannon",
+      "power_scaling": {
+        "damage": [
+          0.9,
+          1.15
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 5000,
+      "damage": 42,
+      "fire_rate": 4.6,
+      "energy_per_shot": 4
+    },
+    {
+      "id": "weapon.autocannon.t5",
+      "name": "Flak Cannon V",
+      "description": "Versatile. Medium-rate explosive shells that burst on impact and damage everything nearby. Fires two shells.",
+      "category": "weapon",
+      "branch": "autocannon",
+      "tier": 5,
+      "requires": [
+        "weapon.autocannon.t4"
+      ],
+      "class": "kinetic",
+      "damage_type": "explosive",
+      "behaviour": "projectile",
+      "projectiles": 2,
+      "spread_deg": 8,
+      "random_spread_deg": 2,
+      "spacing": 0,
+      "pierce": 0,
+      "radius": 1.1,
+      "lifetime": 1.0,
+      "splash": 7.0,
+      "heat_per_shot": 0,
+      "heat_capacity": 0,
+      "heat_dissipation": 0,
+      "overheat_recover": 0.4,
+      "spin_up": 0,
+      "spin_min_rate": 1.0,
+      "projectile_speed": 170,
+      "projectile_visual": "proj.autocannon",
+      "sound": "sfx.weapon.autocannon",
+      "power_scaling": {
+        "damage": [
+          0.9,
+          1.15
+        ],
+        "fire_rate": [
+          0.95,
+          1.05
+        ]
+      },
+      "cost": 7600,
+      "damage": 52,
+      "fire_rate": 5.0,
+      "energy_per_shot": 4.5
+    }
   ]
 }

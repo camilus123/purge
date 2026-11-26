@@ -24,6 +24,8 @@ var phase: int = 0
 var phase_t: float = 0.0
 var path_i: int = 0
 var hit_time: float = -10.0  # sim time of the last hit, drives the hit flash
+var is_boss: bool = false
+var spawn_time: float = 0.0  # level time it appeared
 # Per attack pattern state
 var attack_cd: PackedFloat32Array
 var attack_angle: PackedFloat32Array

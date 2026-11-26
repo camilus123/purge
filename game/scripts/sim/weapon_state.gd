@@ -1,12 +1,19 @@
 class_name WeaponState
 extends RefCounted
 ## A mounted primary weapon: its data unpacked into typed fields plus its runtime state.
+## Behaviour is built from components: projectile count, spread, spacing, pierce, splash
+## (projectiles), a continuous beam that may sweep (beam), or a charged instant line (rail).
+
+const PROJECTILE := 0
+const BEAM := 1
+const RAIL := 2
 
 var id: String
 var name: String
 var sound: String
+var behaviour: int = PROJECTILE
 var is_energy: bool
-var damage: float
+var damage: float          # per shot, or per second for beams
 var fire_rate: float
 var speed: float
 var radius: float
@@ -14,16 +21,24 @@ var lifetime: float
 var projectiles: int
 var spread: float          # radians, total fan width for multi-projectile shots
 var random_spread: float   # radians, random scatter per projectile
+var spacing: float         # sideways distance between parallel projectiles
 var pierce: int
+var splash: float          # explosion radius on impact, 0 = none
 var dtype: int
 var kind: int
-var energy_per_shot: float
+var energy_per_shot: float # per shot, or per second for beams
 var heat_per_shot: float
 var heat_capacity: float
 var heat_dissipation: float
 var overheat_recover: float
 var spin_up: float
 var spin_min_rate: float
+var beam_range: float = 130.0
+var beam_width: float = 1.0
+var beam_kind: int = 0
+var sweep: float = 0.0          # radians, half of the total sweep
+var sweep_speed: float = 0.0    # radians of phase per second
+var charge_time: float = 0.0
 var dmg_scale_0: float = 1.0   # multiplier at 0% weapon power
 var dmg_scale_1: float = 1.0   # multiplier at 100% weapon power
 var rate_scale_0: float = 1.0
@@ -37,6 +52,16 @@ var spin: float = 0.0
 var heat: float = 0.0
 var overheated: bool = false
 var starved: bool = false
+var charge: float = 0.0
+var sweep_t: float = 0.0
+var sound_timer: float = 0.0
+var hit_timer: float = 0.0
+var accuracy_timer: float = 0.0
+var accuracy_hit: bool = false
+# Beam geometry for the view, valid while beam_on: start, direction and length.
+var beam_on: bool = false
+var beam_angle: float = 0.0
+var beam_len: float = 0.0
 
 
 static func from_def(d: Dictionary, damage_types: Array, sim: GameSim) -> WeaponState:
@@ -44,6 +69,13 @@ static func from_def(d: Dictionary, damage_types: Array, sim: GameSim) -> Weapon
 	w.id = d["id"]
 	w.name = d.get("name", w.id)
 	w.sound = d.get("sound", "")
+	match String(d.get("behaviour", "projectile")):
+		"beam":
+			w.behaviour = BEAM
+		"rail":
+			w.behaviour = RAIL
+		_:
+			w.behaviour = PROJECTILE
 	w.is_energy = String(d.get("class", "energy")) == "energy"
 	w.damage = d["damage"]
 	w.fire_rate = d["fire_rate"]
@@ -53,7 +85,9 @@ static func from_def(d: Dictionary, damage_types: Array, sim: GameSim) -> Weapon
 	w.projectiles = int(d.get("projectiles", 1))
 	w.spread = deg_to_rad(d.get("spread_deg", 0.0))
 	w.random_spread = deg_to_rad(d.get("random_spread_deg", 0.0))
+	w.spacing = d.get("spacing", 0.0)
 	w.pierce = int(d.get("pierce", 0))
+	w.splash = d.get("splash", 0.0)
 	w.dtype = maxi(damage_types.find(d.get("damage_type", "energy")), 0)
 	w.kind = sim.kind_of(d.get("projectile_visual", ""))
 	w.energy_per_shot = d.get("energy_per_shot", 0.0)
@@ -63,6 +97,12 @@ static func from_def(d: Dictionary, damage_types: Array, sim: GameSim) -> Weapon
 	w.overheat_recover = d.get("overheat_recover", 0.4)
 	w.spin_up = d.get("spin_up", 0.0)
 	w.spin_min_rate = d.get("spin_min_rate", 1.0)
+	w.beam_range = d.get("range", 130.0)
+	w.beam_width = d.get("beam_width", 1.0)
+	w.beam_kind = sim.kind_of(d.get("beam_visual", d.get("projectile_visual", "")))
+	w.sweep = deg_to_rad(d.get("sweep_deg", 0.0)) * 0.5
+	w.sweep_speed = d.get("sweep_speed", 0.0)
+	w.charge_time = d.get("charge_time", 0.0)
 	var ps: Dictionary = d.get("power_scaling", {})
 	if ps.has("damage"):
 		w.dmg_scale_0 = ps["damage"][0]
@@ -79,6 +119,9 @@ func reset() -> void:
 	heat = 0.0
 	overheated = false
 	starved = false
+	charge = 0.0
+	sweep_t = 0.0
+	beam_on = false
 
 
 ## Shots per second right now, given the weapon power share (0..1).

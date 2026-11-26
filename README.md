@@ -23,9 +23,14 @@ The scripts expect Godot at `H:	emp\godot\Godot_v4.7.2-stable_win64_console.exe`
 to use another copy. `--set=key=value` overrides one setting for a single run (for example
 `--set=fps_cap=240`); `-Driver vulkan` on `run.ps1` switches the renderer.
 
-In game: mouse to fly, LMB and RMB fire, wheel shifts power, Esc pauses (sensitivity, mouse mode
-and shield choice are in the pause menu), F3 shows performance, F4 stress test, F5 invincible,
-F6 reloads data files, PgUp and PgDn change level. `--level=sandbox/1` starts the endless test range.
+The game opens on the main menu: start a campaign or a single set, buy and fit tech in the shop,
+then launch the stage. In a stage: mouse to fly, LMB and RMB fire, wheel shifts power, middle
+button fires the special, Esc pauses, F3 shows performance. Debug builds (`tools\run.ps1`) also
+have F4 stress test, F5 invincible, F6 reload data, PgUp/PgDn change level, and F7 in the shop for
+credits. Saves are in `%APPDATA%\Godot\app_userdata\purge\saves`.
+
+Useful switches: `--level=frontier/1` (straight into a level), `--loadout=weapon.laser.t4,special.seeker.t1`
+(with --level, fit any items), `--flow-test` (plays the campaign by itself and prints each step).
 
 ## Layout
 

@@ -9,6 +9,7 @@ extends RefCounted
 const TECH_SCHEMAS := {
 	"tech/weapons.json": "weapons", "tech/shields.json": "shields", "tech/reactors.json": "reactors",
 	"tech/armor.json": "armor", "tech/ship.json": "ship", "tech/power_model.json": "power_model",
+	"tech/specials.json": "specials",
 }
 
 var errors: PackedStringArray = []
@@ -39,6 +40,7 @@ func run(ds: DataStore) -> bool:
 		if file_name.ends_with(".json"):
 			_check_file("enemies".path_join(file_name), "patterns" if file_name == "patterns.json" else "enemies")
 	_check_file("economy.json", "economy")
+	_check_file("difficulty.json", "difficulty")
 	_check_assets()
 	for set_def: Dictionary in ds.sets:
 		var folder: String = "levels".path_join(set_def["folder"])

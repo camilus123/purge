@@ -43,6 +43,9 @@ var _pool_bar: ColorRect
 var _pool_val: Label
 var _weapon_rows: Array = []   # per weapon: [name Label, status Label, bar ColorRect, note Label]
 var _weapon_box: VBoxContainer
+var _special_name: Label
+var _special_val: Label
+var bank_credits: int = 0      # credits already banked in the run, shown with the stage's kill credits
 
 # Right panel widgets
 var _stat_values: Dictionary = {}
@@ -55,7 +58,7 @@ func _ready() -> void:
 	clip_contents = true
 	var bg := ColorRect.new()
 	bg.color = C_BG
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	# Bright frame line and a soft glow along the playfield edge.
@@ -199,7 +202,7 @@ func _build_left() -> void:
 	_split_flash = ReferenceRect.new()
 	_split_flash.editor_only = false
 	_split_flash.border_width = 3.0
-	_split_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_split_flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_split_flash.offset_left = -4.0
 	_split_flash.offset_top = -4.0
 	_split_flash.offset_right = 4.0
@@ -225,7 +228,9 @@ func _build_left() -> void:
 	_weapon_box.add_theme_constant_override("separation", 3)
 	_column.add_child(_weapon_box)
 	_spacer(10)
-	_row("MMB  SPECIAL", "not fitted")
+	var sr2 := _row("MMB  SPECIAL", "not fitted")
+	_special_name = sr2[0]
+	_special_val = sr2[1]
 
 
 func _build_right() -> void:
@@ -251,9 +256,9 @@ func _build_right() -> void:
 		"MMB  -  special",
 		"Esc  -  pause and settings",
 		"F3  -  performance overlay",
-		"F4 / F5  -  stress test / invincible",
-		"F6  -  reload data files",
-		"PgUp / PgDn  -  previous / next level",
+		"",
+		"Debug: F4 stress test, F5 invincible,",
+		"F6 reload data, PgUp / PgDn change level",
 	]), 13, C_DIM)
 	help.add_theme_constant_override("line_spacing", 6)
 	_column.add_child(help)
@@ -267,13 +272,22 @@ func refresh_loadout() -> void:
 		c.queue_free()
 	_weapon_rows.clear()
 	var buttons := ["LMB", "RMB"]
-	for i in sim.player.weapons.size():
+	for i in 2:
 		var wp := sim.player.weapons[i]
-		var r := _row("%s  %s" % [buttons[i], wp.name.to_upper()], "", _weapon_box, 13, C_BAD)
+		var title := "%s  %s" % [buttons[i], wp.name.to_upper() if wp != null else "(empty)"]
+		var r := _row(title, "", _weapon_box, 13, C_BAD)
 		var bar := _bar(C_WEAPON, 10, _weapon_box)
-		var note := _label("heat" if wp.heat_capacity > 0.0 else "", 11, C_DIM)
+		var note_text := ""
+		if wp != null:
+			if wp.heat_capacity > 0.0:
+				note_text = "heat"
+			elif wp.behaviour == WeaponState.RAIL:
+				note_text = "charge"
+		var note := _label(note_text, 11, C_DIM)
 		_weapon_box.add_child(note)
 		_weapon_rows.append([r[0], r[1], bar, note])
+	var sp := sim.player.special
+	_special_name.text = "MMB  " + (sp.name.to_upper() if sp != null else "SPECIAL")
 	_shield_name.text = "SHIELD  " + sim.player.shield_name.to_upper()
 	_reactor_val.text = "%d MW" % int(sim.player.reactor_output)
 	_text_timer = 0.0
@@ -333,7 +347,11 @@ func _update_left(delta: float, update_text: bool) -> void:
 		var wp := p.weapons[i]
 		var row: Array = _weapon_rows[i]
 		var bar: ColorRect = row[2]
-		if wp.heat_capacity > 0.0:
+		if wp == null:
+			_set_frac(bar, 0.0)
+		elif wp.behaviour == WeaponState.RAIL:
+			_set_frac(bar, wp.charge / maxf(wp.charge_time, 0.001))
+		elif wp.heat_capacity > 0.0:
 			_set_frac(bar, wp.heat / wp.heat_capacity)
 		else:
 			_set_frac(bar, wp.current_damage(share) / maxf(wp.damage * wp.dmg_scale_1, 0.001))
@@ -349,9 +367,16 @@ func _update_left(delta: float, update_text: bool) -> void:
 		shield_note = "recharge in %.1fs   %s" % [p.shield_timer, shield_note]
 	_set_text(_shield_val, shield_note)
 	_set_text(_pool_val, "%d / %d" % [int(p.pool), int(p.pool_max)])
+	if p.special != null:
+		_set_text(_special_val, "%d / %d" % [p.special.ammo, p.special.ammo_max])
+		_special_val.add_theme_color_override("font_color", C_BAD if p.special.ammo == 0 else C_TEXT)
+	else:
+		_set_text(_special_val, "not fitted")
 	for i in mini(_weapon_rows.size(), p.weapons.size()):
 		var wp := p.weapons[i]
 		var row: Array = _weapon_rows[i]
+		if wp == null:
+			continue
 		var status := ""
 		if wp.overheated:
 			status = "OVERHEATED"
@@ -359,7 +384,9 @@ func _update_left(delta: float, update_text: bool) -> void:
 			status = "LOW POWER"
 		_set_text(row[1], status)
 		var bar: ColorRect = row[2]
-		if wp.heat_capacity > 0.0:
+		if wp.behaviour == WeaponState.RAIL:
+			bar.color = C_TEXT if wp.charge >= wp.charge_time else C_SHIELD
+		elif wp.heat_capacity > 0.0:
 			bar.color = C_BAD if wp.overheated else C_WEAPON.lerp(C_BAD, wp.heat / wp.heat_capacity)
 		else:
 			bar.color = C_SHIELD.lerp(C_WEAPON, share)
@@ -368,7 +395,7 @@ func _update_left(delta: float, update_text: bool) -> void:
 
 func _update_right() -> void:
 	_set_text(_stat_values["SCORE"], str(sim.score))
-	_set_text(_stat_values["CREDITS"], str(sim.credits))
+	_set_text(_stat_values["CREDITS"], str(bank_credits + sim.credits))
 	_set_text(_stat_values["KILLS"], str(sim.kills))
 	var acc := 0.0
 	if sim.shots_fired > 0:

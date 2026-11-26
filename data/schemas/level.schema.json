@@ -120,6 +120,9 @@
           },
           "_comment": {
             "type": "string"
+          },
+          "boss": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -135,6 +138,10 @@
     },
     "secrets": {
       "type": "array"
+    },
+    "boss_par_time": {
+      "type": "number",
+      "minimum": 0
     }
   },
   "required": [

@@ -1,5 +1,21 @@
 # Changelog
 
+## Milestone 4: Shop and tech tree (2026-11-26)
+- Main menu: continue, new game (campaign or single set, Easy/Normal/Hard, save slot), load,
+  settings, quit; a debug-only test range.
+- Shop between stages: the tech tree drawn per category with locked / affordable / owned / equipped
+  states, a details panel with stats compared against the fitted item, buy, sell, equip on LMB or
+  RMB, unequip, hull repair and ammo restock. F7 in debug builds adds credits.
+- Results screen with a line-by-line credit breakdown, and an end screen with run statistics.
+- Full starting tech tree (80 items) in `data/tech/`, including `specials.json`.
+- New weapon behaviours: continuous and sweeping beams, charged piercing rail shots, explosive
+  splash, parallel twin shots. Six special weapons: homing missiles, wandering rocket swarm,
+  torpedo, cluster bombs, bullet-clearing shockwave and proximity mines.
+- `data/difficulty.json` (enemy health, damage, bullet speed, fire rate, credits) and the results
+  weights in `data/economy.json`.
+- Save slots with versioned JSON; set completion unlocks single-set play.
+- `--flow-test` plays a whole campaign by itself; 98 rule tests.
+
 ## Start menu (2026-11-26)
 - The game opens on a start menu with a Start button and the settings; this also cures the cursor
   ring that stayed visible after launch. The earlier timed cursor workarounds are gone.

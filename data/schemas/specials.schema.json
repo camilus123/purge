@@ -1,0 +1,221 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Special weapons",
+  "type": "object",
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "shield",
+              "weapon",
+              "special",
+              "reactor",
+              "armor",
+              "other"
+            ]
+          },
+          "branch": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cost": {
+            "type": "number",
+            "minimum": 0
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "x-ref": "tech"
+            }
+          },
+          "excludes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "x-ref": "tech"
+            }
+          },
+          "icon": {
+            "type": "string"
+          },
+          "ammo": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "volley": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "restock_cost": {
+            "type": "number",
+            "minimum": 0
+          },
+          "cooldown": {
+            "type": "number",
+            "minimum": 0
+          },
+          "spread_deg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 360
+          },
+          "launch": {
+            "type": "string",
+            "enum": [
+              "forward",
+              "behind"
+            ]
+          },
+          "spacing": {
+            "type": "number",
+            "minimum": 0
+          },
+          "effect": {
+            "type": "string",
+            "enum": [
+              "shockwave"
+            ]
+          },
+          "shockwave_damage": {
+            "type": "number",
+            "minimum": 0
+          },
+          "projectile": {
+            "type": "object",
+            "properties": {
+              "speed": {
+                "type": "number",
+                "minimum": 0
+              },
+              "damage": {
+                "type": "number",
+                "minimum": 0
+              },
+              "damage_type": {
+                "type": "string",
+                "x-ref": "damage_type"
+              },
+              "radius": {
+                "type": "number",
+                "minimum": 0.1
+              },
+              "lifetime": {
+                "type": "number",
+                "minimum": 0.05
+              },
+              "splash": {
+                "type": "number",
+                "minimum": 0
+              },
+              "homing": {
+                "type": "number",
+                "minimum": 0
+              },
+              "wander": {
+                "type": "number",
+                "minimum": 0
+              },
+              "fuse": {
+                "type": "number",
+                "minimum": 0
+              },
+              "proximity": {
+                "type": "number",
+                "minimum": 0
+              },
+              "drift": {
+                "type": "number"
+              },
+              "visual": {
+                "type": "string",
+                "x-ref": "sprite"
+              },
+              "burst": {
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 64
+                  },
+                  "speed": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "damage": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "splash": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "lifetime": {
+                    "type": "number",
+                    "minimum": 0.05
+                  },
+                  "visual": {
+                    "type": "string",
+                    "x-ref": "sprite"
+                  }
+                },
+                "required": [
+                  "count",
+                  "damage"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "speed",
+              "damage",
+              "visual"
+            ],
+            "additionalProperties": false
+          },
+          "sound": {
+            "type": "string",
+            "x-ref": "sound"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "branch",
+          "tier",
+          "cost",
+          "ammo",
+          "restock_cost"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}
