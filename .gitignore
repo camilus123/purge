@@ -1,0 +1,18 @@
+# Godot 4
+.godot/
+*.translation
+export_presets.cfg.local
+*.tmp
+# Builds
+/build/
+/dist/
+# OS / editors
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+# Local agent/tool settings
+.claude/
+# User mods are local; keep only the README
+/mods/*
+!/mods/README.md
