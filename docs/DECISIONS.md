@@ -130,3 +130,12 @@ with a 240 cap, tick/frame alignment) before bosses arrive in Milestone 5.
   Built-in looks are named placeholders in the same manifest, so real art replaces them one id at a time.
 - The validator runs at startup in debug builds only; release builds skip it to keep loading fast.
 - Hot reload (F6) is available in debug builds only and restarts the current level.
+
+## 2026-11-26: Startup cursor ring
+
+- Symptom (owner's PC): a blue ring stayed at the screen centre from launch until the pause menu
+  was opened and closed. It is the Windows launch-feedback cursor. Godot polls messages instead of
+  blocking on them, so Windows never ends that feedback early, and because a captured pointer never
+  moves, nothing refreshes the stale image. Hiding an already hidden pointer is a no-op.
+- Fix: during play the pointer image is transparent, and once a second the mouse mode is switched to
+  visible and back to captured in the same frame, which forces a real pointer change.
