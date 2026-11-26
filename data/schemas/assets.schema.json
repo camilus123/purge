@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Asset manifest",
+  "type": "object",
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "models": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "placeholder": {
+            "type": "string"
+          },
+          "scale": {
+            "type": "number",
+            "minimum": 0.001
+          },
+          "_comment": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "sprites": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "intensity": {
+            "type": "number",
+            "minimum": 0
+          },
+          "width": {
+            "type": "number",
+            "minimum": 0.05
+          },
+          "length": {
+            "type": "number",
+            "minimum": 0.05
+          },
+          "core": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "color",
+          "width",
+          "length"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sounds": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "synth": {
+            "type": "string"
+          },
+          "volume": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "_comment": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "shield_visuals": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0
+            },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        },
+        "required": [
+          "color"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "models",
+    "sprites",
+    "sounds"
+  ],
+  "additionalProperties": false
+}

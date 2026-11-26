@@ -83,6 +83,9 @@ func _register_actions() -> void:
 	_key_action("debug_overlay", KEY_F3)
 	_key_action("debug_stress", KEY_F4)
 	_key_action("debug_invincible", KEY_F5)
+	_key_action("debug_reload", KEY_F6)
+	_key_action("debug_next_level", KEY_PAGEDOWN)
+	_key_action("debug_prev_level", KEY_PAGEUP)
 
 
 func _mouse_action(action: String, button: MouseButton) -> void:

@@ -1,0 +1,101 @@
+{
+  "_comment": "First real timeline: a short stage that ends when the last wave is destroyed or has left.",
+  "name": "Coastal Approach",
+  "scroll_speed": 10,
+  "scroll_changes": [
+    {
+      "t": 30,
+      "speed": 16
+    },
+    {
+      "t": 55,
+      "speed": 10
+    }
+  ],
+  "background": {
+    "type": "terrain",
+    "theme": "frontier",
+    "ground_speed_scale": 2.5,
+    "corruption": 0.0
+  },
+  "waves": [
+    {
+      "t": 3,
+      "enemy": "enemy.frontier.drone",
+      "count": 4,
+      "x": -18,
+      "dx": 12,
+      "dt": 0.0,
+      "movement": "move.straight"
+    },
+    {
+      "t": 8,
+      "enemy": "enemy.frontier.drone",
+      "count": 5,
+      "x": -28,
+      "dx": 0,
+      "dt": 0.5
+    },
+    {
+      "t": 13,
+      "enemy": "enemy.frontier.drone",
+      "count": 5,
+      "x": 28,
+      "dx": 0,
+      "dt": 0.5
+    },
+    {
+      "t": 18,
+      "enemy": "enemy.frontier.dart",
+      "count": 5,
+      "x": -20,
+      "dx": 10,
+      "dt": 0.25
+    },
+    {
+      "t": 24,
+      "enemy": "enemy.frontier.gunship",
+      "count": 1,
+      "x": -15
+    },
+    {
+      "t": 30,
+      "enemy": "enemy.frontier.drone",
+      "count": 8,
+      "x": -30,
+      "dx": 8,
+      "dt": 0.2,
+      "movement": "move.zigzag"
+    },
+    {
+      "t": 36,
+      "enemy": "enemy.frontier.dart",
+      "count": 8,
+      "x": 30,
+      "dx": -8,
+      "dt": 0.2
+    },
+    {
+      "t": 42,
+      "enemy": "enemy.frontier.gunship",
+      "count": 2,
+      "x": -20,
+      "dx": 40
+    },
+    {
+      "t": 48,
+      "enemy": "enemy.frontier.drone",
+      "count": 8,
+      "x": 20,
+      "dx": -5,
+      "dt": 0.3,
+      "movement": "move.path.s_curve"
+    },
+    {
+      "t": 56,
+      "enemy": "enemy.frontier.sentry",
+      "count": 1,
+      "x": 0
+    }
+  ]
+}

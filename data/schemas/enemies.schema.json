@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Enemies",
+  "type": "object",
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "faction": {
+            "type": "string"
+          },
+          "hp": {
+            "type": "number",
+            "minimum": 1
+          },
+          "resist": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "minimum": -1,
+              "maximum": 1
+            }
+          },
+          "collision_damage": {
+            "type": "number",
+            "minimum": 0
+          },
+          "speed": {
+            "type": "number",
+            "minimum": 0
+          },
+          "radius": {
+            "type": "number",
+            "minimum": 0.1
+          },
+          "credits": {
+            "type": "number",
+            "minimum": 0
+          },
+          "movement": {
+            "type": "string",
+            "x-ref": "movement"
+          },
+          "attacks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "x-ref": "attack"
+            },
+            "maxItems": 4
+          },
+          "model": {
+            "type": "string",
+            "x-ref": "model"
+          },
+          "drops": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "hp",
+          "speed",
+          "radius",
+          "movement",
+          "model"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

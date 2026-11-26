@@ -1,5 +1,20 @@
 # Changelog
 
+## Milestone 3: Data systems (2026-11-26)
+- JSON Schemas for every data type in `data/schemas/`.
+- Data validator (`tools\validate.ps1`, and at startup in debug builds): schema checks, id
+  cross-references, duplicate ids, tech tree cycles and unreachable nodes, missing asset files.
+- Reusable movement patterns (straight, sine, zigzag, swoop and hold, dive, circle, path) and
+  attack patterns (aimed fan, ring, spiral, downward fan, bursts) in `data/enemies/patterns.json`.
+- Two new enemies built purely from data and patterns: Dart and Sentry Platform.
+- Level sets and level timelines from data, with scroll speed changes and stage clear. First real
+  stage: Frontier 1 "Coastal Approach". The endless test range is now the hidden `sandbox` set.
+- Asset manifest `data/assets.json` for models, sprites, sounds and shield colours, with runtime
+  `.glb`, `.ogg` and `.wav` loading and a visible placeholder for anything missing.
+- `mods/` override folder for data files and asset entries.
+- Hot reload with F6, level select with PgUp and PgDn or `--level=<set>/<number>`.
+- `docs/MODDING.md` written; 36 rule tests.
+
 ## After Milestone 2 feedback (2026-11-26)
 - New low-altitude terrain background (fields, forest, river, roads, city blocks with 3D buildings),
   selected per level with `"background": { "type": "terrain" }`. The test range now uses it.

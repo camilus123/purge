@@ -1,0 +1,188 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Movement and attack patterns",
+  "type": "object",
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "movement": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "_comment": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "straight",
+              "sine",
+              "zigzag",
+              "swoop_hold",
+              "dive",
+              "circle",
+              "path"
+            ]
+          },
+          "amplitude": {
+            "type": "number"
+          },
+          "frequency": {
+            "type": "number"
+          },
+          "width": {
+            "type": "number"
+          },
+          "period": {
+            "type": "number",
+            "minimum": 0.05
+          },
+          "hold_y": {
+            "type": "number",
+            "minimum": -60,
+            "maximum": 60
+          },
+          "hold_time": {
+            "type": "number",
+            "minimum": 0
+          },
+          "drift": {
+            "type": "number"
+          },
+          "delay": {
+            "type": "number",
+            "minimum": 0
+          },
+          "dive_speed": {
+            "type": "number",
+            "minimum": 1
+          },
+          "center_y": {
+            "type": "number",
+            "minimum": -60,
+            "maximum": 60
+          },
+          "radius": {
+            "type": "number",
+            "minimum": 1
+          },
+          "angular_speed": {
+            "type": "number"
+          },
+          "time": {
+            "type": "number",
+            "minimum": 0
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "id",
+          "type"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "attack": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "_comment": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "aimed",
+              "ring",
+              "fan_down"
+            ]
+          },
+          "interval": {
+            "type": "number",
+            "minimum": 0.05
+          },
+          "first_delay": {
+            "type": "number",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "spread_deg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 360
+          },
+          "rotate_deg": {
+            "type": "number"
+          },
+          "burst": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 32
+          },
+          "burst_interval": {
+            "type": "number",
+            "minimum": 0.02
+          },
+          "bullet_speed": {
+            "type": "number",
+            "minimum": 1
+          },
+          "damage": {
+            "type": "number",
+            "minimum": 0
+          },
+          "damage_type": {
+            "type": "string",
+            "x-ref": "damage_type"
+          },
+          "bullet_radius": {
+            "type": "number",
+            "minimum": 0.1
+          },
+          "bullet_visual": {
+            "type": "string",
+            "x-ref": "sprite"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "interval",
+          "bullet_speed",
+          "damage",
+          "bullet_visual"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "movement",
+    "attack"
+  ],
+  "additionalProperties": false
+}

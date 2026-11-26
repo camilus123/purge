@@ -1,19 +1,84 @@
 {
-  "_comment": "Enemies face down the screen. speed in units/s. Movement and attack blocks become reusable pattern ids in Milestone 3.",
+  "_comment": "Set 1 enemies. Enemies face down the screen. speed in units/s. movement and attacks refer to ids in patterns.json.",
   "items": [
-    { "id": "enemy.frontier.drone", "name": "Interceptor Drone", "faction": "frontier",
-      "hp": 30, "resist": { "energy": 0.0, "kinetic": 0.0, "explosive": 0.0 },
-      "collision_damage": 25, "speed": 34, "radius": 3.0, "credits": 20,
-      "movement": { "type": "sine", "amplitude": 12, "frequency": 0.45 },
-      "attack": { "type": "aimed", "interval": 2.4, "first_delay": 1.0, "count": 1, "spread_deg": 0,
-                  "bullet_speed": 52, "damage": 10, "bullet_radius": 1.1, "bullet_visual": "proj.enemy.orb" },
-      "model": "enemy.frontier.drone" },
-    { "id": "enemy.frontier.gunship", "name": "Picket Gunship", "faction": "frontier",
-      "hp": 160, "resist": { "energy": 0.0, "kinetic": 0.2, "explosive": 0.0 },
-      "collision_damage": 40, "speed": 30, "radius": 5.0, "credits": 90,
-      "movement": { "type": "swoop_hold", "hold_y": -32, "hold_time": 9, "drift": 10 },
-      "attack": { "type": "aimed", "interval": 1.7, "first_delay": 1.5, "count": 5, "spread_deg": 48,
-                  "bullet_speed": 46, "damage": 8, "bullet_radius": 1.2, "bullet_visual": "proj.enemy.shard" },
-      "model": "enemy.frontier.gunship" }
+    {
+      "id": "enemy.frontier.drone",
+      "name": "Interceptor Drone",
+      "faction": "frontier",
+      "hp": 30,
+      "resist": {
+        "energy": 0,
+        "kinetic": 0,
+        "explosive": 0
+      },
+      "collision_damage": 25,
+      "speed": 34,
+      "radius": 3.0,
+      "credits": 20,
+      "movement": "move.sine.gentle",
+      "attacks": [
+        "atk.aimed.single"
+      ],
+      "model": "enemy.frontier.drone"
+    },
+    {
+      "id": "enemy.frontier.gunship",
+      "name": "Picket Gunship",
+      "faction": "frontier",
+      "hp": 160,
+      "resist": {
+        "energy": 0,
+        "kinetic": 0.2,
+        "explosive": 0
+      },
+      "collision_damage": 40,
+      "speed": 30,
+      "radius": 5.0,
+      "credits": 90,
+      "movement": "move.swoop_hold",
+      "attacks": [
+        "atk.aimed.fan5"
+      ],
+      "model": "enemy.frontier.gunship"
+    },
+    {
+      "id": "enemy.frontier.dart",
+      "name": "Dart",
+      "faction": "frontier",
+      "hp": 18,
+      "resist": {
+        "energy": 0,
+        "kinetic": 0,
+        "explosive": 0
+      },
+      "collision_damage": 30,
+      "speed": 42,
+      "radius": 2.4,
+      "credits": 15,
+      "movement": "move.dive",
+      "attacks": [],
+      "model": "enemy.frontier.dart"
+    },
+    {
+      "id": "enemy.frontier.sentry",
+      "name": "Sentry Platform",
+      "faction": "frontier",
+      "hp": 220,
+      "resist": {
+        "energy": 0.1,
+        "kinetic": 0.3,
+        "explosive": 0
+      },
+      "collision_damage": 50,
+      "speed": 26,
+      "radius": 5.5,
+      "credits": 140,
+      "movement": "move.circle",
+      "attacks": [
+        "atk.spiral",
+        "atk.ring.12"
+      ],
+      "model": "enemy.frontier.sentry"
+    }
   ]
 }

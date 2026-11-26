@@ -111,3 +111,22 @@ with a 240 cap, tick/frame alignment) before bosses arrive in Milestone 5.
   orbital background (procedural planet and starfield shaders), not from gameplay. The orbital
   background must be made cheaper (for example by baking the planet to a texture) before it is used
   in a real stage.
+
+## 2026-11-26: Milestone 3 decisions (data systems)
+
+- **Schemas** are JSON Schema (draft-07 subset) in `data/schemas/`. The validator supports `type`,
+  `properties`, `required`, `additionalProperties`, `items`, `enum`, `minimum`, `maximum`, `minItems`,
+  `maxItems`, plus one custom keyword, `x-ref`, which says a string must be a known id of a kind
+  (tech, enemy, movement, attack, damage_type, model, sprite, sound, shield_visual). Unknown fields
+  are errors, so typos are caught.
+- **Mods override whole data files** by relative path, and extra files in `mods/data/tech` or
+  `mods/data/enemies` are merged in. Per-field patching was rejected as harder to reason about.
+  Asset manifest entries are overridden one id at a time.
+- **Patterns are separate objects referenced by id**; an enemy has one movement pattern and up to
+  four attack patterns, and a level wave may override the movement.
+- **A stage ends** when all waves have spawned and no enemy is left. Until the results screen and
+  shop exist (Milestone 4) the game rolls on to the next level of the set after 3.5 seconds.
+- **Models load at runtime** from `.glb` through the asset manifest; sounds from `.ogg` or `.wav`.
+  Built-in looks are named placeholders in the same manifest, so real art replaces them one id at a time.
+- The validator runs at startup in debug builds only; release builds skip it to keep loading fast.
+- Hot reload (F6) is available in debug builds only and restarts the current level.

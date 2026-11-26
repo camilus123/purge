@@ -69,3 +69,28 @@ func play(id: String, volume: float = 1.0, pitch: float = 1.0, min_gap: float = 
 	p.volume_db = linear_to_db(v)
 	p.pitch_scale = pitch
 	p.play()
+
+
+## Plays a sound by asset id (see data/assets.json): a synthesized placeholder or a loaded file.
+func play_asset(id: String, volume: float = 1.0, pitch: float = 1.0, min_gap: float = 0.0) -> void:
+	if _players.is_empty():
+		return
+	var entry := Assets.sound(id)
+	if entry[0] == null:
+		return
+	if entry[0] is String:
+		play(entry[0], volume * float(entry[1]), pitch, min_gap)
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	if min_gap > 0.0 and now - float(_last_play.get(id, -10.0)) < min_gap:
+		return
+	_last_play[id] = now
+	var v: float = volume * float(entry[1]) * float(Settings.values["volume_master"]) * float(Settings.values["volume_sfx"])
+	if v <= 0.001:
+		return
+	var p := _players[_next]
+	_next = (_next + 1) % VOICES
+	p.stream = entry[0]
+	p.volume_db = linear_to_db(v)
+	p.pitch_scale = pitch
+	p.play()

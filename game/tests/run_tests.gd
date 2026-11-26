@@ -17,6 +17,9 @@ func _init() -> void:
 	test_enemy_resistance()
 	test_starved_weapon_fires_slowly()
 	test_death_restarts_with_full_ship()
+	test_patterns()
+	test_level_timeline()
+	test_validator()
 	print("\n%d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -41,7 +44,7 @@ func _item(file: String, id: String) -> Dictionary:
 	return {}
 
 
-func _make_sim(shield_id: String = "shield.bulwark.t1") -> GameSim:
+func _make_sim(shield_id: String = "shield.bulwark.t1", level: Dictionary = {"name": "test", "waves": []}) -> GameSim:
 	var sim := GameSim.new()
 	sim.setup({
 		"power": _json("tech/power_model.json"),
@@ -52,7 +55,9 @@ func _make_sim(shield_id: String = "shield.bulwark.t1") -> GameSim:
 		"weapon1": _item("tech/weapons.json", "weapon.laser.t1"),
 		"weapon2": _item("tech/weapons.json", "weapon.chaingun.t1"),
 		"enemies": _json("enemies/frontier.json")["items"],
-		"level": {"waves": [], "loop_length": 1000.0},
+		"movement": _json("enemies/patterns.json")["movement"],
+		"attack": _json("enemies/patterns.json")["attack"],
+		"level": level,
 	})
 	sim.player.invulnerable = 0.0
 	return sim
@@ -145,3 +150,84 @@ func test_death_restarts_with_full_ship() -> void:
 	check("armor restored", sim.player.armor, sim.player.armor_max)
 	check("shield restored", sim.player.shield, sim.player.shield_max)
 	check("credits from failed attempt dropped", float(sim.credits), 0.0)
+
+
+func test_patterns() -> void:
+	print("movement and attack patterns")
+	var sim := _make_sim()
+	var dart := sim.spawn_enemy(sim._enemy_types["enemy.frontier.dart"], -30.0)
+	sim.player.x = 20.0
+	sim.player.tx = 20.0
+	for i in 240 * 3:
+		sim.step(1.0 / 240.0)
+	check("dive commits toward the player", 1.0 if (not dart.alive or dart.x > -20.0) else 0.0, 1.0)
+	var sim2 := _make_sim()
+	sim2.invincible = true
+	sim2.spawn_enemy(sim2._enemy_types["enemy.frontier.sentry"], 0.0)
+	for i in 240 * 6:
+		sim2.step(1.0 / 240.0)
+	check("ring and spiral attacks fire bullets", 1.0 if sim2.ebul.count > 20 else 0.0, 1.0)
+	var sim3 := _make_sim()
+	var zig := sim3.spawn_enemy(sim3._enemy_types["enemy.frontier.drone"], 0.0, sim3._move_patterns["move.zigzag"])
+	var max_x := 0.0
+	for i in 240 * 2:
+		sim3.step(1.0 / 240.0)
+		max_x = maxf(max_x, absf(zig.x))
+	check("wave movement override is used (zigzag width 14)", max_x, 14.0, 0.5)
+
+
+func test_level_timeline() -> void:
+	print("level timeline")
+	var level := {"name": "t", "scroll_speed": 10, "scroll_changes": [{"t": 1.0, "speed": 20}],
+		"waves": [{"t": 0.5, "enemy": "enemy.frontier.drone", "count": 3, "x": -10, "dx": 10, "dt": 0.25}]}
+	var sim := _make_sim("shield.bulwark.t1", level)
+	sim.invincible = true
+	for i in 125:
+		sim.step(1.0 / 240.0)
+	check("first of the wave spawned at 0.5s", float(sim.enemy_count), 1.0)
+	for i in 240:
+		sim.step(1.0 / 240.0)
+	check("whole wave spawned", float(sim.enemy_count), 3.0)
+	for i in 240 * 2:
+		sim.step(1.0 / 240.0)
+	check("scroll speed change applied", sim.scroll_speed, 20.0, 0.5)
+	for e in sim.enemies:
+		if e.alive:
+			sim._damage_enemy(e, 9999.0, 0)
+	sim.step(1.0 / 240.0)
+	check("stage clear when the last wave is gone", float(sim.state), float(GameSim.STATE_CLEAR))
+
+
+func test_validator() -> void:
+	print("data validator")
+	var ds := DataStore.new()
+	ds.root_dir = _root_dir
+	ds.reload()
+	var v := DataValidator.new()
+	v.run(ds)
+	for e in v.errors:
+		print("      ", e)
+	check("shipped data has no errors", float(v.errors.size()), 0.0)
+	check("finds the level sets", 1.0 if ds.sets.size() >= 2 else 0.0, 1.0)
+
+	# Break things in memory and make sure each problem is reported.
+	v._file = "test"
+	v.errors.clear()
+	v._check({"id": "x", "type": "sine", "amplitude": "wide"}, v._schema("patterns")["properties"]["movement"]["items"], "movement[x]")
+	check("wrong type is reported", float(v.errors.size()), 1.0)
+	v.errors.clear()
+	v._check({"t": 1, "enemy": "enemy.does.not.exist"}, v._schema("level")["properties"]["waves"]["items"], "waves[0]")
+	check("unknown enemy reference is reported", float(v.errors.size()), 1.0)
+	v.errors.clear()
+	v._check({"t": 1, "enemy": "enemy.frontier.drone", "bogus": 1}, v._schema("level")["properties"]["waves"]["items"], "waves[0]")
+	check("unknown field is reported", float(v.errors.size()), 1.0)
+	v.errors.clear()
+	ds.items["tech.a"] = {"id": "tech.a", "requires": ["tech.b"]}
+	ds.items["tech.b"] = {"id": "tech.b", "requires": ["tech.a"]}
+	ds.item_source["tech.a"] = "tech/test.json"
+	ds.item_source["tech.b"] = "tech/test.json"
+	v._refs["tech"]["tech.a"] = true
+	v._refs["tech"]["tech.b"] = true
+	v._check_tech_tree()
+	check("prerequisite cycle is reported", 1.0 if v.errors.size() >= 1 else 0.0, 1.0)
+	ds.free()

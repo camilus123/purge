@@ -21,6 +21,7 @@ const TEXT_INTERVAL := 0.1   # seconds between number/text refreshes
 var sim: GameSim
 var is_left: bool = true
 var power_flash: float = 0.0   # set to 1 when the split changes, fades out
+var data_errors: int = 0       # shown on the right panel when the validator found problems
 
 var _column: VBoxContainer
 var _text_timer: float = 0.0
@@ -46,6 +47,7 @@ var _weapon_box: VBoxContainer
 # Right panel widgets
 var _stat_values: Dictionary = {}
 var _status: Label
+var _title_label: Label
 
 
 func _ready() -> void:
@@ -109,8 +111,15 @@ func _spacer(h: float) -> void:
 	_column.add_child(s)
 
 
+func set_title(text: String) -> void:
+	if _title_label != null:
+		_title_label.text = text
+
+
 func _title(text: String) -> void:
-	_column.add_child(_label(text, 30, C_FRAME))
+	_title_label = _label(text, 30, C_FRAME)
+	_title_label.clip_text = true
+	_column.add_child(_title_label)
 	var line := ColorRect.new()
 	line.color = Color(C_FRAME, 0.5)
 	line.custom_minimum_size = Vector2(0, 2)
@@ -221,7 +230,7 @@ func _build_left() -> void:
 
 func _build_right() -> void:
 	_title("TEST RANGE")
-	for key: String in ["SCORE", "CREDITS", "KILLS", "ACCURACY", "WAVE LOOP"]:
+	for key: String in ["SCORE", "CREDITS", "KILLS", "ACCURACY", "TIME"]:
 		var r := _row(key, "0", null, 24, C_TEXT)
 		(r[0] as Label).add_theme_color_override("font_color", C_DIM)
 		_stat_values[key] = r[1]
@@ -243,6 +252,8 @@ func _build_right() -> void:
 		"Esc  -  pause and settings",
 		"F3  -  performance overlay",
 		"F4 / F5  -  stress test / invincible",
+		"F6  -  reload data files",
+		"PgUp / PgDn  -  previous / next level",
 	]), 13, C_DIM)
 	help.add_theme_constant_override("line_spacing", 6)
 	_column.add_child(help)
@@ -363,10 +374,15 @@ func _update_right() -> void:
 	if sim.shots_fired > 0:
 		acc = 100.0 * sim.shots_hit / sim.shots_fired
 	_set_text(_stat_values["ACCURACY"], "%d%%" % roundi(acc))
-	_set_text(_stat_values["WAVE LOOP"], str(sim.loop_index + 1))
+	var secs := int(sim.level_time + sim.loop_index * 1000.0) % 1000
+	_set_text(_stat_values["TIME"], "%d:%02d" % [secs / 60, secs % 60])
 	var status := ""
 	if sim.state == GameSim.STATE_DEAD:
 		status = "SHIP DESTROYED\nrestarting stage..."
+	elif sim.state == GameSim.STATE_CLEAR:
+		status = "STAGE CLEAR"
+	if data_errors > 0:
+		status += "\nDATA ERRORS: %d (see console)" % data_errors
 	if sim.stress:
 		status += "\nSTRESS TEST (F4)"
 	if sim.invincible:

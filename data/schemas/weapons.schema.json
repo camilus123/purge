@@ -1,0 +1,194 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Primary weapons",
+  "type": "object",
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "shield",
+              "weapon",
+              "special",
+              "reactor",
+              "armor",
+              "other"
+            ]
+          },
+          "branch": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cost": {
+            "type": "number",
+            "minimum": 0
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "x-ref": "tech"
+            }
+          },
+          "excludes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "x-ref": "tech"
+            }
+          },
+          "icon": {
+            "type": "string"
+          },
+          "class": {
+            "type": "string",
+            "enum": [
+              "energy",
+              "kinetic"
+            ]
+          },
+          "damage_type": {
+            "type": "string",
+            "x-ref": "damage_type"
+          },
+          "damage": {
+            "type": "number",
+            "minimum": 0
+          },
+          "fire_rate": {
+            "type": "number",
+            "minimum": 0.01
+          },
+          "projectile_speed": {
+            "type": "number",
+            "minimum": 1
+          },
+          "projectiles": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "spread_deg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 360
+          },
+          "random_spread_deg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 360
+          },
+          "pierce": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "radius": {
+            "type": "number",
+            "minimum": 0.1
+          },
+          "lifetime": {
+            "type": "number",
+            "minimum": 0.05
+          },
+          "energy_per_shot": {
+            "type": "number",
+            "minimum": 0
+          },
+          "heat_per_shot": {
+            "type": "number",
+            "minimum": 0
+          },
+          "heat_capacity": {
+            "type": "number",
+            "minimum": 0
+          },
+          "heat_dissipation": {
+            "type": "number",
+            "minimum": 0
+          },
+          "overheat_recover": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "spin_up": {
+            "type": "number",
+            "minimum": 0
+          },
+          "spin_min_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "power_scaling": {
+            "type": "object",
+            "properties": {
+              "damage": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "fire_rate": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "projectile_visual": {
+            "type": "string",
+            "x-ref": "sprite"
+          },
+          "sound": {
+            "type": "string",
+            "x-ref": "sound"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "branch",
+          "tier",
+          "cost",
+          "class",
+          "damage_type",
+          "damage",
+          "fire_rate",
+          "projectile_visual"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

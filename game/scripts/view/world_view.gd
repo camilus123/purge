@@ -9,26 +9,12 @@ const BULLET_HEIGHT := 0.6
 const FX_MAX := 1536
 const STRIDE := 16         # MultiMesh floats per instance: 12 transform + 4 custom
 
-# Looks for projectile and effect ids: [colour, intensity, width, length, core radius].
-const SPRITES := {
-	"proj.laser.t1": [Color(0.15, 0.85, 1.0), 3.0, 1.7, 6.5, 0.32],
-	"proj.chaingun.t1": [Color(1.0, 0.8, 0.35), 2.6, 1.0, 3.8, 0.28],
-	"proj.enemy.orb": [Color(1.0, 0.28, 0.08), 2.6, 2.9, 2.9, 0.42],
-	"proj.enemy.shard": [Color(1.0, 0.1, 0.65), 2.6, 2.2, 3.8, 0.4],
-	"fx.spark": [Color(1.0, 0.55, 0.15), 3.0, 0.55, 2.6, 0.25],
-	"fx.spark.hit": [Color(0.5, 0.85, 1.0), 2.5, 0.45, 1.8, 0.25],
-	"fx.flash": [Color(1.0, 0.7, 0.35), 2.2, 2.0, 2.0, 0.35],
-	"fx.trail": [Color(0.25, 0.55, 1.0), 2.0, 0.9, 2.6, 0.2],
-	"fx.muzzle": [Color(0.8, 0.9, 1.0), 2.0, 1.6, 1.6, 0.3],
-}
-const SPRITE_FALLBACK := [Color(1, 0, 1), 3.0, 2.0, 2.0, 0.3]
-
 var sim: GameSim
 var camera: Camera3D
 var environment: Environment
 
 var _ship_root: Node3D
-var _ship: MeshInstance3D
+var _ship: Node3D
 var _shield: MeshInstance3D
 var _shield_mat: ShaderMaterial
 var _shield_flash: float = 0.0
@@ -47,11 +33,13 @@ var _stars_mat: ShaderMaterial
 var _planet: MeshInstance3D
 var _planet_mat: ShaderMaterial
 var _terrain: TerrainBackground
+var _bg_root: Node3D
+var _bg_type: String = ""
 
-var _enemy_nodes: Array[MeshInstance3D] = []
+var _enemy_nodes: Array[Node3D] = []
 var _enemy_uid: PackedInt32Array
 var _enemy_flash: PackedByteArray
-var _node_pool: Dictionary = {}   # model id -> Array of free MeshInstance3D
+var _node_pool: Dictionary = {}   # model id -> Array of free Node3D
 var _flash_mat: StandardMaterial3D
 
 # Effects are purely visual, so they run on frame time, not simulation time.
@@ -137,10 +125,21 @@ func _build_camera() -> void:
 	add_child(sun)
 
 
+## Builds the backdrop the current level asks for. Safe to call again after a level change.
+func rebuild_background() -> void:
+	if _bg_root != null:
+		_bg_root.queue_free()
+	_terrain = null
+	_build_background()
+
+
 func _build_background() -> void:
-	if String(sim.background.get("type", "orbit")) == "terrain":
+	_bg_root = Node3D.new()
+	add_child(_bg_root)
+	_bg_type = String(sim.background.get("type", "orbit"))
+	if _bg_type == "terrain":
 		_terrain = TerrainBackground.new()
-		add_child(_terrain)
+		_bg_root.add_child(_terrain)
 		_terrain.setup(sim.background)
 		return
 	var stars := MeshInstance3D.new()
@@ -152,7 +151,7 @@ func _build_background() -> void:
 	stars.material_override = _stars_mat
 	stars.position = Vector3(0, -300, -60)
 	stars.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(stars)
+	_bg_root.add_child(stars)
 
 	_planet = MeshInstance3D.new()
 	var sphere := SphereMesh.new()
@@ -166,14 +165,13 @@ func _build_background() -> void:
 	_planet.material_override = _planet_mat
 	_planet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_planet.rotation_degrees = Vector3(20, 0, 15)
-	add_child(_planet)
+	_bg_root.add_child(_planet)
 
 
 func _build_ship() -> void:
 	_ship_root = Node3D.new()
 	add_child(_ship_root)
-	_ship = MeshInstance3D.new()
-	_ship.mesh = PlaceholderModels.get_mesh("ship.player.default")
+	_ship = Assets.instantiate_model(sim.ship_model)
 	_ship_root.add_child(_ship)
 
 	_shield = MeshInstance3D.new()
@@ -192,12 +190,7 @@ func _build_ship() -> void:
 
 ## Call after the player's equipment changes.
 func refresh_loadout() -> void:
-	var tint := Color(0.25, 0.6, 1.0)
-	match sim.player.shield_visual:
-		"fx.shield.flicker":
-			tint = Color(1.0, 0.9, 0.4)
-		"fx.shield.mirror":
-			tint = Color(0.75, 0.45, 1.0)
+	var tint := Assets.shield_color(sim.player.shield_visual)
 	_shield_mat.set_shader_parameter("tint", tint)
 
 
@@ -244,13 +237,11 @@ func refresh_sprite_table() -> void:
 	shapes.resize(32)
 	for k in mini(sim.kind_names.size(), 32):
 		var id := sim.kind_names[k]
-		var s: Array = SPRITES.get(id, SPRITE_FALLBACK)
-		if not SPRITES.has(id):
-			push_warning("No sprite look for '%s', using placeholder" % id)
-		var c: Color = s[0]
-		var i: float = s[1]
-		colors[k] = Vector4(c.r * i, c.g * i, c.b * i, 1.0)
-		shapes[k] = Vector4(s[2], s[3], s[4], 0.0)
+		var s := Assets.sprite(id)
+		var c: Array = s["color"]
+		var i: float = s.get("intensity", 2.0)
+		colors[k] = Vector4(c[0] * i, c[1] * i, c[2] * i, 1.0)
+		shapes[k] = Vector4(s["width"], s["length"], s.get("core", 0.3), 0.0)
 	for m: ShaderMaterial in [_add_mat, _fx_mat, _solid_mat]:
 		m.set_shader_parameter("colors", colors)
 		m.set_shader_parameter("shapes", shapes)
@@ -401,7 +392,7 @@ func _render_enemies(alpha: float) -> void:
 	var enemies := sim.enemies
 	for i in GameSim.MAX_ENEMIES:
 		var e := enemies[i]
-		var node := _enemy_nodes[i]
+		var node: Node3D = _enemy_nodes[i]
 		if not e.alive:
 			if node != null:
 				_release_node(i)
@@ -420,16 +411,21 @@ func _render_enemies(alpha: float) -> void:
 		var flashing := 1 if now - e.hit_time < 0.05 else 0
 		if flashing != _enemy_flash[i]:
 			_enemy_flash[i] = flashing
-			node.material_overlay = _flash_mat if flashing == 1 else null
+			_set_overlay(node, _flash_mat if flashing == 1 else null)
 
 
-func _acquire_node(model: String) -> MeshInstance3D:
+func _acquire_node(model: String) -> Node3D:
 	var free: Array = _node_pool.get(model, [])
-	var node: MeshInstance3D
+	var node: Node3D
 	if free.is_empty():
-		node = MeshInstance3D.new()
-		node.mesh = PlaceholderModels.get_mesh(model)
+		node = Assets.instantiate_model(model)
 		node.set_meta("model", model)
+		# Remember the meshes once so the hit flash does not search the tree every time.
+		var meshes: Array = []
+		if node is MeshInstance3D:
+			meshes.append(node)
+		meshes.append_array(node.find_children("*", "MeshInstance3D", true, false))
+		node.set_meta("meshes", meshes)
 		add_child(node)
 	else:
 		node = free.pop_back()
@@ -437,15 +433,36 @@ func _acquire_node(model: String) -> MeshInstance3D:
 	return node
 
 
+func _set_overlay(node: Node3D, mat: Material) -> void:
+	for m: MeshInstance3D in node.get_meta("meshes"):
+		m.material_overlay = mat
+
+
 func _release_node(slot: int) -> void:
 	var node := _enemy_nodes[slot]
 	node.visible = false
-	node.material_overlay = null
+	_set_overlay(node, null)
 	var model: String = node.get_meta("model")
 	if not _node_pool.has(model):
 		_node_pool[model] = []
 	(_node_pool[model] as Array).append(node)
 	_enemy_nodes[slot] = null
+
+
+## Drops every pooled model so changed assets are picked up (hot reload).
+func reset_models() -> void:
+	for i in _enemy_nodes.size():
+		if _enemy_nodes[i] != null:
+			_enemy_nodes[i].queue_free()
+			_enemy_nodes[i] = null
+	for model: String in _node_pool:
+		for n: Node in _node_pool[model]:
+			n.queue_free()
+	_node_pool.clear()
+	_ship.queue_free()
+	_ship = Assets.instantiate_model(sim.ship_model)
+	_ship_root.add_child(_ship)
+	_ship_root.move_child(_ship, 0)
 
 
 func _fill_bullets(pool: BulletPool, mm: MultiMesh, buf: PackedFloat32Array) -> void:

@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Level set",
+  "type": "object",
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "theme": {
+      "type": "string"
+    },
+    "order": {
+      "type": "number"
+    },
+    "hidden": {
+      "type": "boolean"
+    },
+    "music": {
+      "type": "string",
+      "x-ref": "sound"
+    },
+    "levels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "single_set": {
+      "type": "object",
+      "properties": {
+        "credits": {
+          "type": "number",
+          "minimum": 0
+        },
+        "loadout": {
+          "type": "object",
+          "properties": {
+            "reactor": {
+              "type": "string",
+              "x-ref": "tech"
+            },
+            "shield": {
+              "type": "string",
+              "x-ref": "tech"
+            },
+            "armor": {
+              "type": "string",
+              "x-ref": "tech"
+            },
+            "weapon1": {
+              "type": "string",
+              "x-ref": "tech"
+            },
+            "weapon2": {
+              "type": "string",
+              "x-ref": "tech"
+            },
+            "special": {
+              "type": "string",
+              "x-ref": "tech"
+            }
+          },
+          "required": [
+            "reactor",
+            "shield",
+            "armor",
+            "weapon1"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "credits"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "order",
+    "levels"
+  ],
+  "additionalProperties": false
+}

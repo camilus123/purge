@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Economy",
+  "type": "object",
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "starting_credits": {
+      "type": "number",
+      "minimum": 0
+    },
+    "sell_refund": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "starting_loadout": {
+      "type": "object",
+      "properties": {
+        "reactor": {
+          "type": "string",
+          "x-ref": "tech"
+        },
+        "shield": {
+          "type": "string",
+          "x-ref": "tech"
+        },
+        "armor": {
+          "type": "string",
+          "x-ref": "tech"
+        },
+        "weapon1": {
+          "type": "string",
+          "x-ref": "tech"
+        },
+        "weapon2": {
+          "type": "string",
+          "x-ref": "tech"
+        },
+        "special": {
+          "type": "string",
+          "x-ref": "tech"
+        }
+      },
+      "required": [
+        "reactor",
+        "shield",
+        "armor",
+        "weapon1"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "starting_credits",
+    "starting_loadout"
+  ],
+  "additionalProperties": false
+}

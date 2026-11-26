@@ -3,10 +3,6 @@ extends RefCounted
 ## An enemy definition from data, unpacked into typed fields once so the
 ## simulation loop does no dictionary lookups.
 
-const MOVE_STRAIGHT := 0
-const MOVE_SINE := 1
-const MOVE_SWOOP_HOLD := 2
-
 var id: String
 var model: String
 var hp: float
@@ -15,26 +11,12 @@ var collision_damage: float
 var speed: float
 var radius: float
 var credits: int
-
-var move: int = MOVE_STRAIGHT
-var amplitude: float = 0.0
-var frequency: float = 0.0
-var hold_y: float = 0.0
-var hold_time: float = 0.0
-var drift: float = 0.0
-
-var has_attack: bool = false
-var atk_interval: float = 1.0
-var atk_first_delay: float = 1.0
-var atk_count: int = 1
-var atk_spread: float = 0.0      # radians, total fan width
-var bullet_speed: float = 50.0
-var bullet_damage: float = 10.0
-var bullet_radius: float = 1.0
-var bullet_kind: int = 0
+var move: MovePattern
+var attacks: Array[AttackPattern] = []
 
 
-static func from_def(d: Dictionary, damage_types: Array, sim: GameSim) -> EnemyType:
+## movement and attack are dictionaries of pattern id -> MovePattern / AttackPattern.
+static func from_def(d: Dictionary, damage_types: Array, movement: Dictionary, attack: Dictionary) -> EnemyType:
 	var t := EnemyType.new()
 	t.id = d["id"]
 	t.model = d.get("model", "")
@@ -48,29 +30,15 @@ static func from_def(d: Dictionary, damage_types: Array, sim: GameSim) -> EnemyT
 	for i in damage_types.size():
 		t.resist[i] = res.get(damage_types[i], 0.0)
 
-	var mv: Dictionary = d.get("movement", {})
-	match String(mv.get("type", "straight")):
-		"sine":
-			t.move = MOVE_SINE
-			t.amplitude = mv.get("amplitude", 10.0)
-			t.frequency = mv.get("frequency", 0.5)
-		"swoop_hold":
-			t.move = MOVE_SWOOP_HOLD
-			t.hold_y = mv.get("hold_y", -30.0)
-			t.hold_time = mv.get("hold_time", 8.0)
-			t.drift = mv.get("drift", 0.0)
-		_:
-			t.move = MOVE_STRAIGHT
-
-	if d.has("attack"):
-		var a: Dictionary = d["attack"]
-		t.has_attack = true
-		t.atk_interval = a.get("interval", 2.0)
-		t.atk_first_delay = a.get("first_delay", 1.0)
-		t.atk_count = int(a.get("count", 1))
-		t.atk_spread = deg_to_rad(a.get("spread_deg", 0.0))
-		t.bullet_speed = a.get("bullet_speed", 50.0)
-		t.bullet_damage = a.get("damage", 10.0)
-		t.bullet_radius = a.get("bullet_radius", 1.0)
-		t.bullet_kind = sim.kind_of(a.get("bullet_visual", "proj.enemy.orb"))
+	var move_id: String = d.get("movement", "")
+	if movement.has(move_id):
+		t.move = movement[move_id]
+	else:
+		push_warning("Enemy %s: unknown movement pattern '%s', flying straight" % [t.id, move_id])
+		t.move = MovePattern.new()
+	for attack_id: String in d.get("attacks", []):
+		if attack.has(attack_id) and t.attacks.size() < Enemy.MAX_ATTACKS:
+			t.attacks.append(attack[attack_id])
+		else:
+			push_warning("Enemy %s: attack pattern '%s' unknown or over the limit of %d" % [t.id, attack_id, Enemy.MAX_ATTACKS])
 	return t

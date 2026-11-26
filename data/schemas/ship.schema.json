@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Player hull",
+  "type": "object",
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "max_speed": {
+      "type": "number",
+      "minimum": 1
+    },
+    "acceleration": {
+      "type": "number",
+      "minimum": 1
+    },
+    "follow_gain": {
+      "type": "number",
+      "minimum": 1
+    },
+    "hitbox_radius": {
+      "type": "number",
+      "minimum": 0.1
+    },
+    "ram_damage": {
+      "type": "number",
+      "minimum": 0
+    },
+    "respawn_invulnerable_time": {
+      "type": "number",
+      "minimum": 0
+    },
+    "muzzles": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "minItems": 2
+    },
+    "model": {
+      "type": "string",
+      "x-ref": "model"
+    }
+  },
+  "required": [
+    "id",
+    "max_speed",
+    "acceleration",
+    "hitbox_radius",
+    "model"
+  ],
+  "additionalProperties": false
+}
