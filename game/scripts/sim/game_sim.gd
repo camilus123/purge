@@ -18,6 +18,7 @@ const MAX_PER_COL := 64
 
 const STATE_PLAYING := 0
 const STATE_DEAD := 1
+const STATE_CLEAR := 2
 
 # Events for the presentation layer: 4 floats each (type, x, y, value).
 const EV_EXPLOSION := 1     # value = radius
@@ -29,6 +30,7 @@ const EV_SHOT := 6          # value = weapon slot
 const EV_POWER := 7         # value = shield share
 const EV_RESTART := 8
 const EV_SPECIAL := 9
+const EV_STAGE_CLEAR := 10
 const MAX_EVENTS := 512
 
 var player := PlayerShip.new()
@@ -43,6 +45,7 @@ var state: int = STATE_PLAYING
 var time: float = 0.0
 var scroll: float = 0.0
 var scroll_speed: float = 12.0
+var ship_model: String = ""
 var background: Dictionary = {}   # the level's background block, read by the view
 var score: int = 0
 var credits: int = 0
@@ -51,6 +54,10 @@ var escaped: int = 0
 var shots_fired: int = 0
 var shots_hit: int = 0
 var loop_index: int = 0
+var level_name: String = ""
+var level_time: float = 0.0
+var level_length: float = 0.0   # time of the last spawn; 0 for looping levels
+var clear_time: float = 0.0     # seconds since the stage was cleared
 
 # Input, written by the game loop before each step.
 var in_move: Vector2 = Vector2.ZERO     # relative aim movement in playfield units, consumed each step
@@ -73,9 +80,15 @@ var _ship_def: Dictionary = {}
 var _loadout: Dictionary = {}
 var _enemy_types: Dictionary = {}       # id -> EnemyType
 var _enemy_type_list: Array[EnemyType] = []
-var _spawns: Array = []                 # [time, EnemyType, x] sorted by time
+var _spawns: Array = []                 # [time, EnemyType, x, MovePattern or null] sorted by time
+var _move_patterns: Dictionary = {}     # id -> MovePattern
+var _attack_patterns: Dictionary = {}   # id -> AttackPattern
+var _loop: bool = false
+var _base_scroll_speed: float = 12.0
+var _scroll_target: float = 12.0
+var _scroll_changes: Array = []         # [time, speed] sorted by time
+var _scroll_ptr: int = 0
 var _spawn_ptr: int = 0
-var _level_time: float = 0.0
 var _loop_length: float = 30.0
 var _hp_scale: float = 1.0
 var _hp_scale_per_loop: float = 1.0
@@ -117,7 +130,7 @@ func kind_of(visual_id: String) -> int:
 
 
 ## config keys: power, ship, reactor, shield, armor, weapon1, weapon2 (Dictionaries from data),
-## enemies (Array of enemy definitions), level (Dictionary).
+## enemies, movement, attack (Arrays of definitions), level (Dictionary).
 func setup(config: Dictionary) -> void:
 	_power = config["power"]
 	_ship_def = config["ship"]
@@ -128,10 +141,16 @@ func setup(config: Dictionary) -> void:
 	_starved_mult = _power.get("starved_fire_rate_mult", 0.35)
 	_power_step = _power.get("step", 0.1)
 
+	_move_patterns.clear()
+	_attack_patterns.clear()
+	for d: Dictionary in config.get("movement", []):
+		_move_patterns[d["id"]] = MovePattern.from_def(d)
+	for d: Dictionary in config.get("attack", []):
+		_attack_patterns[d["id"]] = AttackPattern.from_def(d, damage_types, self)
 	_enemy_types.clear()
 	_enemy_type_list.clear()
 	for d: Dictionary in config.get("enemies", []):
-		var t := EnemyType.from_def(d, damage_types, self)
+		var t := EnemyType.from_def(d, damage_types, _move_patterns, _attack_patterns)
 		_enemy_types[t.id] = t
 		_enemy_type_list.append(t)
 
@@ -146,20 +165,35 @@ func set_power_step(step: float) -> void:
 
 
 func _load_level(level: Dictionary) -> void:
-	scroll_speed = level.get("scroll_speed", 12.0)
+	level_name = level.get("name", "")
+	_base_scroll_speed = level.get("scroll_speed", 12.0)
 	background = level.get("background", {})
+	_loop = level.get("loop", false)
 	_loop_length = level.get("loop_length", 30.0)
 	_hp_scale_per_loop = level.get("hp_scale_per_loop", 1.0)
+	_scroll_changes.clear()
+	for c: Dictionary in level.get("scroll_changes", []):
+		_scroll_changes.append([float(c["t"]), float(c["speed"])])
+	_scroll_changes.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 	_spawns.clear()
 	for w: Dictionary in level.get("waves", []):
 		var type_id: String = w["enemy"]
 		if not _enemy_types.has(type_id):
 			push_warning("Level refers to unknown enemy %s" % type_id)
 			continue
+		var override: MovePattern = null
+		if w.has("movement"):
+			if _move_patterns.has(w["movement"]):
+				override = _move_patterns[w["movement"]]
+			else:
+				push_warning("Level refers to unknown movement pattern %s" % w["movement"])
 		for k in int(w.get("count", 1)):
 			_spawns.append([float(w["t"]) + k * float(w.get("dt", 0.0)), _enemy_types[type_id],
-					float(w.get("x", 0.0)) + k * float(w.get("dx", 0.0))])
+					float(w.get("x", 0.0)) + k * float(w.get("dx", 0.0)), override])
 	_spawns.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	level_length = 0.0
+	if not _loop and not _spawns.is_empty():
+		level_length = _spawns[_spawns.size() - 1][0]
 
 
 func setup_player() -> void:
@@ -173,6 +207,7 @@ func setup_player() -> void:
 	p.follow_gain = ship.get("follow_gain", 40.0)
 	p.radius = ship.get("hitbox_radius", 1.5)
 	p.ram_damage = ship.get("ram_damage", 60.0)
+	ship_model = ship.get("model", "")
 	_respawn_invuln = ship.get("respawn_invulnerable_time", 2.0)
 
 	p.armor_max = armor.get("hp", 100.0)
@@ -240,7 +275,11 @@ func restart() -> void:
 	shots_fired = 0
 	shots_hit = 0
 	loop_index = 0
-	_level_time = 0.0
+	level_time = 0.0
+	clear_time = 0.0
+	scroll_speed = _base_scroll_speed
+	_scroll_target = _base_scroll_speed
+	_scroll_ptr = 0
 	_spawn_ptr = 0
 	_hp_scale = 1.0
 	in_move = Vector2.ZERO
@@ -448,7 +487,7 @@ func _reflect(amount: float, dtype: int, from_slot: int) -> void:
 
 # ---------------------------------------------------------------- enemies
 
-func spawn_enemy(type: EnemyType, sx: float) -> Enemy:
+func spawn_enemy(type: EnemyType, sx: float, move_override: MovePattern = null) -> Enemy:
 	if _free_count <= 0:
 		return null
 	_free_count -= 1
@@ -457,6 +496,7 @@ func spawn_enemy(type: EnemyType, sx: float) -> Enemy:
 	e.uid = _uid
 	e.alive = true
 	e.type = type
+	e.move = move_override if move_override != null else type.move
 	e.max_hp = type.hp * _hp_scale
 	e.hp = e.max_hp
 	e.radius = type.radius
@@ -465,11 +505,17 @@ func spawn_enemy(type: EnemyType, sx: float) -> Enemy:
 	e.y = -HALF_H - type.radius - 2.0
 	e.ox = e.x
 	e.oy = e.y
+	e.vx = 0.0
+	e.vy = 0.0
 	e.t = 0.0
 	e.phase = 0
 	e.phase_t = 0.0
-	e.attack_cd = type.atk_first_delay
+	e.path_i = 0
 	e.hit_time = -10.0
+	for k in type.attacks.size():
+		e.attack_cd[k] = type.attacks[k].first_delay
+		e.attack_angle[k] = PI * 0.5
+		e.burst_left[k] = 0
 	enemy_count += 1
 	return e
 
@@ -488,18 +534,34 @@ func _step_spawner(dt: float) -> void:
 			var e := spawn_enemy(t, _rng.randf_range(-HALF_W + 5.0, HALF_W - 5.0))
 			if e == null:
 				break
-			e.attack_cd = _rng.randf_range(0.2, 1.4)
+			for k in t.attacks.size():
+				e.attack_cd[k] = _rng.randf_range(0.2, 1.4)
 		return
-	_level_time += dt
-	while _spawn_ptr < _spawns.size() and _spawns[_spawn_ptr][0] <= _level_time:
+	level_time += dt
+	# Scroll speed changes ease in over about a second.
+	while _scroll_ptr < _scroll_changes.size() and _scroll_changes[_scroll_ptr][0] <= level_time:
+		_scroll_target = _scroll_changes[_scroll_ptr][1]
+		_scroll_ptr += 1
+	if scroll_speed != _scroll_target:
+		scroll_speed = move_toward(scroll_speed, _scroll_target, maxf(absf(_scroll_target - scroll_speed), 2.0) * dt)
+	while _spawn_ptr < _spawns.size() and _spawns[_spawn_ptr][0] <= level_time:
 		var s: Array = _spawns[_spawn_ptr]
-		spawn_enemy(s[1], s[2])
+		spawn_enemy(s[1], s[2], s[3])
 		_spawn_ptr += 1
-	if _level_time >= _loop_length:
-		_level_time -= _loop_length
-		_spawn_ptr = 0
-		loop_index += 1
-		_hp_scale *= _hp_scale_per_loop
+	if _loop:
+		if level_time >= _loop_length:
+			level_time -= _loop_length
+			_spawn_ptr = 0
+			_scroll_ptr = 0
+			loop_index += 1
+			_hp_scale *= _hp_scale_per_loop
+	elif state == STATE_PLAYING and _spawn_ptr >= _spawns.size() and enemy_count == 0 and not _spawns.is_empty():
+		# Every wave has been destroyed or has left: the stage is over.
+		state = STATE_CLEAR
+		clear_time = 0.0
+		_emit(EV_STAGE_CLEAR, player.x, player.y, 0.0)
+	elif state == STATE_CLEAR:
+		clear_time += dt
 
 
 func _step_enemies(dt: float) -> void:
@@ -510,43 +572,103 @@ func _step_enemies(dt: float) -> void:
 		if not e.alive:
 			continue
 		var t := e.type
+		var m := e.move
 		e.ox = e.x
 		e.oy = e.y
 		e.t += dt
 
-		match t.move:
-			EnemyType.MOVE_SINE:
+		match m.type:
+			MovePattern.SINE:
 				e.y += t.speed * dt
-				e.x = e.spawn_x + t.amplitude * sin(e.t * t.frequency * TAU)
-			EnemyType.MOVE_SWOOP_HOLD:
+				e.x = e.spawn_x + m.amplitude * sin(e.t * m.frequency * TAU)
+			MovePattern.ZIGZAG:
+				e.y += t.speed * dt
+				# Triangle wave between -width and +width.
+				var ph := fposmod(e.t / m.period, 1.0)
+				e.x = e.spawn_x + m.width * (4.0 * absf(ph - 0.5) - 1.0)
+			MovePattern.SWOOP_HOLD:
 				if e.phase == 0:
 					# Arrive fast, ease into the hold line.
-					var remaining := t.hold_y - e.y
+					var remaining := m.hold_y - e.y
 					e.y += t.speed * clampf(remaining * 0.12, 0.15, 1.6) * dt
 					if remaining <= 0.3:
 						e.phase = 1
 						e.phase_t = 0.0
 				elif e.phase == 1:
 					e.phase_t += dt
-					e.x = e.spawn_x + t.drift * sin(e.phase_t * 0.7)
-					if e.phase_t >= t.hold_time and not stress:
+					e.x = e.spawn_x + m.drift * sin(e.phase_t * 0.7)
+					if e.phase_t >= m.hold_time and not stress:
 						e.phase = 2
 				else:
 					e.y += t.speed * 1.5 * dt
+			MovePattern.DIVE:
+				if e.phase == 0:
+					e.y += t.speed * dt
+					if e.t >= m.delay:
+						# Commit to a straight run at where the player is right now.
+						var ddx := p.x - e.x
+						var ddy := maxf(p.y - e.y, 10.0)
+						var dl := sqrt(ddx * ddx + ddy * ddy)
+						e.vx = ddx / dl * m.dive_speed
+						e.vy = ddy / dl * m.dive_speed
+						e.phase = 1
+				else:
+					e.x += e.vx * dt
+					e.y += e.vy * dt
+			MovePattern.CIRCLE:
+				if e.phase == 0:
+					e.y += t.speed * dt
+					if e.y >= m.center_y:
+						e.phase = 1
+						e.phase_t = 0.0
+				elif e.phase == 1:
+					e.phase_t += dt
+					var ang := e.phase_t * m.angular_speed
+					e.x = e.spawn_x + m.radius * sin(ang)
+					e.y = m.center_y + m.radius * (1.0 - cos(ang))
+					if e.phase_t >= m.time and not stress:
+						e.phase = 2
+				else:
+					e.y += t.speed * 1.5 * dt
+			MovePattern.PATH:
+				if e.path_i < m.points.size():
+					var target := m.points[e.path_i]
+					var tx := e.spawn_x + target.x - e.x
+					var ty := target.y - e.y
+					var dist := sqrt(tx * tx + ty * ty)
+					var step_len := t.speed * dt
+					if dist <= step_len:
+						e.x += tx
+						e.y += ty
+						e.path_i += 1
+					else:
+						e.x += tx / dist * step_len
+						e.y += ty / dist * step_len
+				else:
+					e.y += t.speed * dt
 			_:
 				e.y += t.speed * dt
 
-		if e.y > HALF_H + e.radius + 4.0:
+		if e.y > HALF_H + e.radius + 4.0 or absf(e.x) > HALF_W + 30.0:
 			escaped += 1
 			_free_enemy(e)
 			continue
 
-		# Attack
-		if t.has_attack and p.alive and e.y > -HALF_H:
-			e.attack_cd -= dt
-			if e.attack_cd <= 0.0:
-				e.attack_cd += t.atk_interval
-				_enemy_fire(e, t)
+		# Attacks
+		if p.alive and e.y > -HALF_H:
+			for k in t.attacks.size():
+				var cd := e.attack_cd[k] - dt
+				if cd <= 0.0:
+					var a := t.attacks[k]
+					_enemy_fire(e, a, k)
+					if a.burst > 1:
+						if e.burst_left[k] <= 0:
+							e.burst_left[k] = a.burst
+						e.burst_left[k] -= 1
+						cd += a.burst_interval if e.burst_left[k] > 0 else a.interval
+					else:
+						cd += a.interval
+				e.attack_cd[k] = cd
 
 		# Body collision with the player
 		if p.alive:
@@ -573,20 +695,30 @@ func _step_enemies(dt: float) -> void:
 				_col_count[c] = cn + 1
 
 
-func _enemy_fire(e: Enemy, t: EnemyType) -> void:
-	var base := atan2(player.y - e.y, player.x - e.x)
-	var count := t.atk_count
-	var spread := t.atk_spread
+func _enemy_fire(e: Enemy, a: AttackPattern, k: int) -> void:
+	var count := a.count
+	var base := 0.0
+	var step := 0.0
+	match a.type:
+		AttackPattern.RING:
+			base = e.attack_angle[k]
+			e.attack_angle[k] = base + a.rotate
+			step = TAU / float(count)
+		AttackPattern.FAN_DOWN:
+			base = PI * 0.5
+		_:
+			base = atan2(player.y - e.y, player.x - e.x)
+	if a.type != AttackPattern.RING and count > 1:
+		step = a.spread / float(count - 1)
+		base -= a.spread * 0.5
 	if stress:
-		# Stress test: every enemy fires full rings.
+		# Stress test: every shot becomes a full ring.
 		count = 10
-		spread = TAU * 0.9
-	for k in count:
-		var a := base
-		if count > 1:
-			a += spread * (float(k) / float(count - 1) - 0.5)
-		ebul.spawn(e.x, e.y, cos(a) * t.bullet_speed, sin(a) * t.bullet_speed,
-				t.bullet_radius, t.bullet_damage, 0, t.bullet_kind, 8.0, e.slot)
+		step = TAU / 10.0
+	for i in count:
+		var ang := base + step * i
+		ebul.spawn(e.x, e.y, cos(ang) * a.bullet_speed, sin(ang) * a.bullet_speed,
+				a.bullet_radius, a.damage, a.dtype, a.bullet_kind, 8.0, e.slot)
 
 
 func _damage_enemy(e: Enemy, amount: float, dtype: int) -> void:

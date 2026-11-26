@@ -3,12 +3,8 @@ extends Node
 ## simulation, lets the view draw an interpolated frame, and lays out the screen:
 ## a fixed-aspect playfield in the centre with HUD panels on both sides.
 ##
-## Command line (after `--`): --windowed, --bench[=seconds], --demo, --shot=<png path>, --stress
-
-const SOUND_FOR := {
-	"sfx.weapon.laser": "laser",
-	"sfx.weapon.chaingun": "gun",
-}
+## Command line (after `--`): --windowed, --level=<set id>/<number>, --bench[=seconds], --light,
+## --demo, --stress, --set=<key>=<value>, --shot=<png path>, --shot-delay=<seconds>
 
 var sim: GameSim
 var view: WorldView
@@ -23,6 +19,10 @@ var paused: bool = false
 var _mouse_accum: Vector2 = Vector2.ZERO
 var _field_rect: Rect2
 var _loadout_ids: Dictionary = {}
+var _set: Dictionary = {}        # the level set being played
+var _level_index: int = 0
+var _level_arg: String = ""
+var _data_errors: int = 0
 var _sim_usec: int = 0
 var _tick_dt: float = 1.0 / 240.0
 
@@ -67,8 +67,11 @@ func _ready() -> void:
 		Settings.values["window_mode"] = "windowed"
 	Settings.apply_display()
 
+	if OS.is_debug_build():
+		_validate_data()
 	sim = GameSim.new()
 	_loadout_ids = (Data.load_dict("economy.json").get("starting_loadout", {}) as Dictionary).duplicate()
+	_pick_start_level()
 	sim.setup(_build_config())
 	sim.set_power_step(float(Settings.values["power_step"]))
 	if _bench and not _bench_light:
@@ -95,6 +98,8 @@ func _parse_args() -> void:
 		elif arg == "--stress":
 			_demo = true
 			_bench_warmup = -1.0
+		elif arg.begins_with("--level="):
+			_level_arg = arg.get_slice("=", 1)
 		elif arg == "--light":
 			_bench_light = true
 		elif arg.begins_with("--bench"):
@@ -126,11 +131,40 @@ func _parse_args() -> void:
 			_shot_delay = float(arg.get_slice("=", 1))
 
 
+## Runs the data validator and prints what it finds (debug builds, and after a hot reload).
+func _validate_data() -> void:
+	var validator := DataValidator.new()
+	validator.run(Data)
+	_data_errors = validator.errors.size()
+	for e in validator.errors:
+		push_error("DATA: " + e)
+		print("DATA ERROR: ", e)
+	for w in validator.warnings:
+		print("DATA WARNING: ", w)
+	print("Data check: ", validator.summary())
+
+
+## Start level: --level=<set id>/<number>, else the test range for benchmarks, else the first set.
+func _pick_start_level() -> void:
+	_level_index = 0
+	_set = {}
+	if _level_arg != "":
+		_set = Data.find_set(_level_arg.get_slice("/", 0))
+		_level_index = maxi(int(_level_arg.get_slice("/", 1)) - 1, 0)
+		if _set.is_empty():
+			push_warning("Unknown level set in --level=%s" % _level_arg)
+	elif _bench:
+		_set = Data.find_set("sandbox")
+	if _set.is_empty():
+		for s: Dictionary in Data.sets:
+			if not s.get("hidden", false):
+				_set = s
+				break
+	if _set.is_empty() and not Data.sets.is_empty():
+		_set = Data.sets[0]
+
+
 func _build_config() -> Dictionary:
-	var enemy_defs: Array = []
-	for id: String in Data.items:
-		if id.begins_with("enemy."):
-			enemy_defs.append(Data.items[id])
 	return {
 		"power": Data.load_dict("tech/power_model.json"),
 		"ship": Data.load_dict("tech/ship.json"),
@@ -139,9 +173,59 @@ func _build_config() -> Dictionary:
 		"armor": Data.item(_loadout_ids.get("armor", "")),
 		"weapon1": Data.item(_loadout_ids.get("weapon1", "")),
 		"weapon2": Data.item(_loadout_ids.get("weapon2", "")),
-		"enemies": enemy_defs,
-		"level": Data.load_dict("levels/sandbox/level_01.json"),
+		"enemies": Data.items_with_prefix("enemy."),
+		"movement": Data.movement,
+		"attack": Data.attack,
+		"level": Data.load_level(_set, _level_index),
 	}
+
+
+## Loads the current level into the simulation and refreshes everything that depends on it.
+func _start_level() -> void:
+	var was_stress := sim.stress
+	var was_invincible := sim.invincible
+	sim.setup(_build_config())
+	sim.stress = was_stress
+	sim.invincible = was_invincible
+	view.refresh_sprite_table()
+	view.refresh_loadout()
+	view.rebuild_background()
+	hud_left.refresh_loadout()
+	_update_hud_title()
+
+
+func _update_hud_title() -> void:
+	hud_right.set_title(sim.level_name.to_upper())
+	hud_right.data_errors = _data_errors
+
+
+## Moves through every level of every set, in order (debug level select).
+func _change_level(step: int) -> void:
+	var set_i := Data.sets.find(_set)
+	_level_index += step
+	if _level_index >= (_set.get("levels", []) as Array).size():
+		set_i = posmod(set_i + 1, Data.sets.size())
+		_set = Data.sets[set_i]
+		_level_index = 0
+	elif _level_index < 0:
+		set_i = posmod(set_i - 1, Data.sets.size())
+		_set = Data.sets[set_i]
+		_level_index = (_set.get("levels", []) as Array).size() - 1
+	_start_level()
+
+
+## Re-reads every data and asset file without restarting the game (debug builds, F6).
+func _hot_reload() -> void:
+	var set_id: String = _set.get("id", "")
+	Data.reload()
+	Assets.reload()
+	_validate_data()
+	_set = Data.find_set(set_id)
+	if _set.is_empty():
+		_pick_start_level()
+	view.reset_models()
+	_start_level()
+	print("Data reloaded")
 
 
 func _build_screen() -> void:
@@ -200,6 +284,7 @@ func _build_screen() -> void:
 	pause_menu.shield_selected.connect(_on_shield_selected)
 	pause_menu.display_changed.connect(_apply_display)
 	ui.add_child(pause_menu)
+	_update_hud_title()
 
 
 func _layout() -> void:
@@ -237,10 +322,7 @@ func _on_settings_changed() -> void:
 
 func _on_shield_selected(shield_id: String) -> void:
 	_loadout_ids["shield"] = shield_id
-	sim.setup(_build_config())
-	view.refresh_sprite_table()
-	view.refresh_loadout()
-	hud_left.refresh_loadout()
+	_start_level()
 
 
 func _update_mouse_mode() -> void:
@@ -298,6 +380,12 @@ func _input(event: InputEvent) -> void:
 		sim.stress = not sim.stress
 	elif event.is_action_pressed("debug_invincible"):
 		sim.invincible = not sim.invincible
+	elif event.is_action_pressed("debug_next_level"):
+		_change_level(1)
+	elif event.is_action_pressed("debug_prev_level"):
+		_change_level(-1)
+	elif event.is_action_pressed("debug_reload") and OS.is_debug_build():
+		_hot_reload()
 
 
 func _physics_process(delta: float) -> void:
@@ -359,6 +447,11 @@ func _process(delta: float) -> void:
 	_ticks_this_frame = 0
 	_sim_usec = 0
 
+	# A cleared stage rolls on to the next level of the set after a short pause.
+	# (The results screen and shop take over this hand-off in Milestone 4.)
+	if sim.state == GameSim.STATE_CLEAR and sim.clear_time > 3.5 and not paused:
+		_change_level(1)
+
 	var t0 := Time.get_ticks_usec()
 	_drain_events()
 	var alpha := Engine.get_physics_interpolation_fraction()
@@ -411,17 +504,16 @@ func _drain_events() -> void:
 		view.handle_event(type, ev[o + 1], ev[o + 2], value)
 		match type:
 			GameSim.EV_SHOT:
-				var w := sim.player.weapons[int(value)]
-				Sfx.play(SOUND_FOR.get(w.sound, "laser"), 0.35, randf_range(0.95, 1.05), 0.045)
+				Sfx.play_asset(sim.player.weapons[int(value)].sound, 1.0, randf_range(0.95, 1.05), 0.045)
 			GameSim.EV_EXPLOSION:
-				Sfx.play("explosion", clampf(value * 0.2, 0.4, 1.0), randf_range(0.8, 1.2), 0.03)
+				Sfx.play_asset("sfx.explosion", clampf(value * 0.2, 0.4, 1.0), randf_range(0.8, 1.2), 0.03)
 			GameSim.EV_SHIELD_HIT:
-				Sfx.play("shield", 0.7, 1.0, 0.05)
+				Sfx.play_asset("sfx.shield.hit", 1.0, 1.0, 0.05)
 			GameSim.EV_HULL_HIT:
-				Sfx.play("hull", 0.9, 1.0, 0.05)
+				Sfx.play_asset("sfx.hull.hit", 1.0, 1.0, 0.05)
 			GameSim.EV_POWER:
 				hud_left.power_flash = 1.0
-				Sfx.play("tick", 0.8, 0.8 + (1.0 - value) * 0.7)
+				Sfx.play_asset("sfx.ui.power", 1.0, 0.8 + (1.0 - value) * 0.7)
 	sim.event_count = 0
 
 

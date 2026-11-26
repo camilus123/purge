@@ -16,6 +16,7 @@ boot_splash/show_image=false
 
 Settings="*res://scripts/core/settings.gd"
 Data="*res://scripts/core/data_store.gd"
+Assets="*res://scripts/core/asset_library.gd"
 Sfx="*res://scripts/core/sfx.gd"
 
 [display]

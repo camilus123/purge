@@ -1,0 +1,150 @@
+{
+  "_comment": "Reusable movement and attack patterns. Enemies and level waves refer to these by id. Playfield is x -45..45, y -60 (top) to 60 (bottom).",
+  "movement": [
+    {
+      "id": "move.straight",
+      "type": "straight"
+    },
+    {
+      "id": "move.sine.gentle",
+      "type": "sine",
+      "amplitude": 12,
+      "frequency": 0.45
+    },
+    {
+      "id": "move.sine.wide",
+      "type": "sine",
+      "amplitude": 24,
+      "frequency": 0.3
+    },
+    {
+      "id": "move.zigzag",
+      "type": "zigzag",
+      "width": 14,
+      "period": 1.6
+    },
+    {
+      "id": "move.swoop_hold",
+      "type": "swoop_hold",
+      "hold_y": -32,
+      "hold_time": 9,
+      "drift": 10
+    },
+    {
+      "id": "move.dive",
+      "type": "dive",
+      "delay": 1.2,
+      "dive_speed": 75
+    },
+    {
+      "id": "move.circle",
+      "type": "circle",
+      "center_y": -20,
+      "radius": 14,
+      "angular_speed": 1.6,
+      "time": 7
+    },
+    {
+      "id": "move.path.s_curve",
+      "type": "path",
+      "points": [
+        [
+          0,
+          -40
+        ],
+        [
+          25,
+          -20
+        ],
+        [
+          -25,
+          5
+        ],
+        [
+          0,
+          30
+        ]
+      ],
+      "_comment": "points are [x offset from spawn x, y]"
+    }
+  ],
+  "attack": [
+    {
+      "id": "atk.aimed.single",
+      "type": "aimed",
+      "interval": 2.4,
+      "first_delay": 1.0,
+      "count": 1,
+      "bullet_speed": 52,
+      "damage": 10,
+      "damage_type": "energy",
+      "bullet_radius": 1.1,
+      "bullet_visual": "proj.enemy.orb"
+    },
+    {
+      "id": "atk.aimed.fan5",
+      "type": "aimed",
+      "interval": 1.7,
+      "first_delay": 1.5,
+      "count": 5,
+      "spread_deg": 48,
+      "bullet_speed": 46,
+      "damage": 8,
+      "damage_type": "energy",
+      "bullet_radius": 1.2,
+      "bullet_visual": "proj.enemy.shard"
+    },
+    {
+      "id": "atk.aimed.burst3",
+      "type": "aimed",
+      "interval": 2.6,
+      "first_delay": 0.8,
+      "count": 1,
+      "burst": 3,
+      "burst_interval": 0.14,
+      "bullet_speed": 60,
+      "damage": 7,
+      "damage_type": "kinetic",
+      "bullet_radius": 1.0,
+      "bullet_visual": "proj.enemy.orb"
+    },
+    {
+      "id": "atk.ring.12",
+      "type": "ring",
+      "interval": 2.2,
+      "first_delay": 1.2,
+      "count": 12,
+      "bullet_speed": 40,
+      "damage": 8,
+      "damage_type": "energy",
+      "bullet_radius": 1.1,
+      "bullet_visual": "proj.enemy.orb"
+    },
+    {
+      "id": "atk.spiral",
+      "type": "ring",
+      "interval": 0.22,
+      "first_delay": 1.5,
+      "count": 3,
+      "rotate_deg": 17,
+      "bullet_speed": 38,
+      "damage": 6,
+      "damage_type": "energy",
+      "bullet_radius": 1.0,
+      "bullet_visual": "proj.enemy.shard"
+    },
+    {
+      "id": "atk.fan_down.3",
+      "type": "fan_down",
+      "interval": 1.4,
+      "first_delay": 0.6,
+      "count": 3,
+      "spread_deg": 30,
+      "bullet_speed": 55,
+      "damage": 7,
+      "damage_type": "kinetic",
+      "bullet_radius": 1.0,
+      "bullet_visual": "proj.enemy.orb"
+    }
+  ]
+}

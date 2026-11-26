@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Shields",
+  "type": "object",
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "shield",
+              "weapon",
+              "special",
+              "reactor",
+              "armor",
+              "other"
+            ]
+          },
+          "branch": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cost": {
+            "type": "number",
+            "minimum": 0
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "x-ref": "tech"
+            }
+          },
+          "excludes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "x-ref": "tech"
+            }
+          },
+          "icon": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "number",
+            "minimum": 0
+          },
+          "recharge": {
+            "type": "number",
+            "minimum": 0
+          },
+          "delay": {
+            "type": "number",
+            "minimum": 0
+          },
+          "reflect": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "bleed": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "visual": {
+            "type": "string",
+            "x-ref": "shield_visual"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "branch",
+          "tier",
+          "cost",
+          "capacity",
+          "recharge",
+          "delay"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

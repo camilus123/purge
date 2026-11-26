@@ -1,0 +1,13 @@
+{
+  "_comment": "Set 1. More levels arrive in Milestone 5.",
+  "id": "frontier",
+  "name": "Frontier",
+  "theme": "frontier",
+  "order": 1,
+  "levels": [
+    "level_01.json"
+  ],
+  "single_set": {
+    "credits": 3000
+  }
+}

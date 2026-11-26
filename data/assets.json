@@ -1,0 +1,169 @@
+{
+  "_comment": "Maps asset ids to files or built-in placeholders. Use {\"file\": \"assets/models/x.glb\"} to swap a model, or override entries in mods/assets.json.",
+  "models": {
+    "ship.player.default": {
+      "placeholder": "player"
+    },
+    "enemy.frontier.drone": {
+      "placeholder": "drone"
+    },
+    "enemy.frontier.gunship": {
+      "placeholder": "gunship"
+    },
+    "enemy.frontier.dart": {
+      "placeholder": "dart"
+    },
+    "enemy.frontier.sentry": {
+      "placeholder": "sentry"
+    }
+  },
+  "sprites": {
+    "proj.laser.t1": {
+      "color": [
+        0.15,
+        0.85,
+        1.0
+      ],
+      "intensity": 3.0,
+      "width": 1.7,
+      "length": 6.5,
+      "core": 0.32
+    },
+    "proj.chaingun.t1": {
+      "color": [
+        1.0,
+        0.8,
+        0.35
+      ],
+      "intensity": 2.6,
+      "width": 1.0,
+      "length": 3.8,
+      "core": 0.28
+    },
+    "proj.enemy.orb": {
+      "color": [
+        1.0,
+        0.28,
+        0.08
+      ],
+      "intensity": 2.6,
+      "width": 2.9,
+      "length": 2.9,
+      "core": 0.42
+    },
+    "proj.enemy.shard": {
+      "color": [
+        1.0,
+        0.1,
+        0.65
+      ],
+      "intensity": 2.6,
+      "width": 2.2,
+      "length": 3.8,
+      "core": 0.4
+    },
+    "fx.spark": {
+      "color": [
+        1.0,
+        0.55,
+        0.15
+      ],
+      "intensity": 3.0,
+      "width": 0.55,
+      "length": 2.6,
+      "core": 0.25
+    },
+    "fx.spark.hit": {
+      "color": [
+        0.5,
+        0.85,
+        1.0
+      ],
+      "intensity": 2.5,
+      "width": 0.45,
+      "length": 1.8,
+      "core": 0.25
+    },
+    "fx.flash": {
+      "color": [
+        1.0,
+        0.7,
+        0.35
+      ],
+      "intensity": 2.2,
+      "width": 2.0,
+      "length": 2.0,
+      "core": 0.35
+    },
+    "fx.trail": {
+      "color": [
+        0.25,
+        0.55,
+        1.0
+      ],
+      "intensity": 2.0,
+      "width": 0.9,
+      "length": 2.6,
+      "core": 0.2
+    },
+    "fx.muzzle": {
+      "color": [
+        0.8,
+        0.9,
+        1.0
+      ],
+      "intensity": 2.0,
+      "width": 1.6,
+      "length": 1.6,
+      "core": 0.3
+    }
+  },
+  "sounds": {
+    "sfx.weapon.laser": {
+      "synth": "laser",
+      "volume": 0.35
+    },
+    "sfx.weapon.chaingun": {
+      "synth": "gun",
+      "volume": 0.35
+    },
+    "sfx.explosion": {
+      "synth": "explosion"
+    },
+    "sfx.shield.hit": {
+      "synth": "shield",
+      "volume": 0.7
+    },
+    "sfx.hull.hit": {
+      "synth": "hull",
+      "volume": 0.9
+    },
+    "sfx.ui.power": {
+      "synth": "tick",
+      "volume": 0.8
+    }
+  },
+  "shield_visuals": {
+    "fx.shield.bulwark": {
+      "color": [
+        0.25,
+        0.6,
+        1.0
+      ]
+    },
+    "fx.shield.flicker": {
+      "color": [
+        1.0,
+        0.9,
+        0.4
+      ]
+    },
+    "fx.shield.mirror": {
+      "color": [
+        0.75,
+        0.45,
+        1.0
+      ]
+    }
+  }
+}

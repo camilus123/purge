@@ -1,0 +1,139 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Level",
+  "type": "object",
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "scroll_speed": {
+      "type": "number",
+      "minimum": 0
+    },
+    "scroll_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "number",
+            "minimum": 0
+          },
+          "speed": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "t",
+          "speed"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "background": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "terrain",
+            "orbit"
+          ]
+        },
+        "theme": {
+          "type": "string"
+        },
+        "ground_speed_scale": {
+          "type": "number",
+          "minimum": 0
+        },
+        "corruption": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": true
+    },
+    "music": {
+      "type": "string",
+      "x-ref": "sound"
+    },
+    "loop": {
+      "type": "boolean"
+    },
+    "loop_length": {
+      "type": "number",
+      "minimum": 1
+    },
+    "hp_scale_per_loop": {
+      "type": "number",
+      "minimum": 0.1
+    },
+    "waves": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "number",
+            "minimum": 0
+          },
+          "enemy": {
+            "type": "string",
+            "x-ref": "enemy"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "x": {
+            "type": "number",
+            "minimum": -50,
+            "maximum": 50
+          },
+          "dx": {
+            "type": "number"
+          },
+          "dt": {
+            "type": "number",
+            "minimum": 0
+          },
+          "movement": {
+            "type": "string",
+            "x-ref": "movement"
+          },
+          "_comment": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "t",
+          "enemy"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "boss": {
+      "type": "string",
+      "x-ref": "enemy"
+    },
+    "secrets": {
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "scroll_speed",
+    "background",
+    "waves"
+  ],
+  "additionalProperties": false
+}

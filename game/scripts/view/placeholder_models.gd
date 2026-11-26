@@ -1,6 +1,6 @@
 class_name PlaceholderModels
 extends RefCounted
-## Clean placeholder models built from primitives, keyed by asset id.
+## Clean placeholder models built from primitives, keyed by the placeholder name in data/assets.json.
 ## Conventions (see docs/MODDING.md): player faces -Z, enemies face +Z, Y is up, 1 unit = 1 m.
 ## Real .glb models will replace these through the asset manifest.
 
@@ -13,14 +13,18 @@ static func get_mesh(id: String) -> Mesh:
 		return _cache[id]
 	var parts: Array = []
 	match id:
-		"ship.player.default":
+		"player":
 			parts = _player()
-		"enemy.frontier.drone":
+		"drone":
 			parts = _drone()
-		"enemy.frontier.gunship":
+		"gunship":
 			parts = _gunship()
+		"dart":
+			parts = _dart()
+		"sentry":
+			parts = _sentry()
 		_:
-			push_warning("No model for asset id '%s', using placeholder" % id)
+			# The visible "missing model" stand-in.
 			parts = [[_box(Vector3(4, 2, 4)), Transform3D.IDENTITY, _mat(Color(1, 0, 1), 0.0, 0.6, Color(1, 0, 1), 1.5)]]
 	var mesh := _build(parts)
 	_cache[id] = mesh
@@ -145,3 +149,30 @@ static func _gunship() -> Array:
 		[_sphere(), _xf(Vector3(0, 0.3, 4.0), Vector3(0.9, 0.5, 0.4)), glow],
 		[_box(Vector3(3.6, 0.8, 0.4)), _xf(Vector3(0, 0, -4.1)), engine],
 	]
+
+
+static func _dart() -> Array:
+	var body := _mat(Color(0.32, 0.3, 0.3), 0.6, 0.4)
+	var plate := _mat(Color(0.6, 0.2, 0.08), 0.4, 0.5)
+	var eye := _mat(Color(1, 0.5, 0.1), 0.0, 0.4, Color(1.0, 0.45, 0.05), 5.0)
+	return [
+		[_cyl(0.0, 0.9, 4.6), _xf(Vector3(0, 0, 0.4), Vector3.ONE, Vector3(PI * 0.5, 0, 0)), body],
+		[_box(Vector3(4.4, 0.2, 1.3)), _xf(Vector3(0, 0, -1.2)), plate],
+		[_sphere(), _xf(Vector3(0, 0.35, 0.6), Vector3(0.4, 0.3, 0.6)), eye],
+	]
+
+
+static func _sentry() -> Array:
+	var steel := _mat(Color(0.25, 0.27, 0.32), 0.65, 0.4)
+	var plate := _mat(Color(0.5, 0.13, 0.1), 0.4, 0.5)
+	var glow := _mat(Color(1, 0.2, 0.5), 0.0, 0.4, Color(1.0, 0.1, 0.5), 5.0)
+	var parts: Array = [
+		[_cyl(4.6, 5.2, 1.4), _xf(Vector3.ZERO), steel],
+		[_cyl(2.6, 3.2, 1.2), _xf(Vector3(0, 1.1, 0)), plate],
+		[_sphere(), _xf(Vector3(0, 1.8, 0), Vector3(1.3, 0.8, 1.3)), glow],
+	]
+	for i in 6:
+		var a := TAU * i / 6.0
+		parts.append([_box(Vector3(1.0, 0.8, 2.2)), _xf(Vector3(sin(a) * 5.2, 0, cos(a) * 5.2), Vector3.ONE, Vector3(0, a, 0)), steel])
+		parts.append([_sphere(), _xf(Vector3(sin(a) * 6.3, 0, cos(a) * 6.3), Vector3(0.4, 0.4, 0.4)), glow])
+	return parts

@@ -1,0 +1,10 @@
+{
+  "id": "sandbox",
+  "name": "Test Range",
+  "theme": "test",
+  "order": 99,
+  "hidden": true,
+  "levels": [
+    "level_01.json"
+  ]
+}

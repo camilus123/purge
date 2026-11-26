@@ -1,17 +1,70 @@
 {
-  "_comment": "Milestone 2 test range. A looping list of waves; each loop multiplies enemy health. Replaced by real level timelines in Milestone 3.",
+  "_comment": "Endless test range. A looping list of waves; each loop multiplies enemy health.",
   "name": "Test Range",
   "scroll_speed": 12,
-  "background": { "type": "terrain", "theme": "frontier", "ground_speed_scale": 2.5, "corruption": 0.0 },
+  "background": {
+    "type": "terrain",
+    "theme": "frontier",
+    "ground_speed_scale": 2.5,
+    "corruption": 0.0
+  },
+  "loop": true,
   "loop_length": 34,
   "hp_scale_per_loop": 1.25,
   "waves": [
-    { "t": 2,  "enemy": "enemy.frontier.drone",   "count": 5, "x": -24, "dx": 12, "dt": 0.0 },
-    { "t": 7,  "enemy": "enemy.frontier.drone",   "count": 6, "x": -30, "dx": 0,  "dt": 0.5 },
-    { "t": 11, "enemy": "enemy.frontier.drone",   "count": 6, "x": 30,  "dx": 0,  "dt": 0.5 },
-    { "t": 15, "enemy": "enemy.frontier.gunship", "count": 1, "x": 0,   "dx": 0,  "dt": 0.0 },
-    { "t": 19, "enemy": "enemy.frontier.drone",   "count": 7, "x": -30, "dx": 10, "dt": 0.25 },
-    { "t": 24, "enemy": "enemy.frontier.gunship", "count": 2, "x": -20, "dx": 40, "dt": 0.0 },
-    { "t": 27, "enemy": "enemy.frontier.drone",   "count": 8, "x": 28,  "dx": -8, "dt": 0.3 }
+    {
+      "t": 2,
+      "enemy": "enemy.frontier.drone",
+      "count": 5,
+      "x": -24,
+      "dx": 12,
+      "dt": 0.0
+    },
+    {
+      "t": 7,
+      "enemy": "enemy.frontier.drone",
+      "count": 6,
+      "x": -30,
+      "dx": 0,
+      "dt": 0.5
+    },
+    {
+      "t": 11,
+      "enemy": "enemy.frontier.dart",
+      "count": 6,
+      "x": -25,
+      "dx": 10,
+      "dt": 0.3
+    },
+    {
+      "t": 15,
+      "enemy": "enemy.frontier.gunship",
+      "count": 1,
+      "x": 0
+    },
+    {
+      "t": 19,
+      "enemy": "enemy.frontier.drone",
+      "count": 7,
+      "x": -30,
+      "dx": 10,
+      "dt": 0.25,
+      "movement": "move.zigzag"
+    },
+    {
+      "t": 24,
+      "enemy": "enemy.frontier.sentry",
+      "count": 1,
+      "x": 0
+    },
+    {
+      "t": 27,
+      "enemy": "enemy.frontier.drone",
+      "count": 8,
+      "x": 28,
+      "dx": -8,
+      "dt": 0.3,
+      "movement": "move.path.s_curve"
+    }
   ]
 }
