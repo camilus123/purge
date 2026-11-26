@@ -43,6 +43,7 @@ var state: int = STATE_PLAYING
 var time: float = 0.0
 var scroll: float = 0.0
 var scroll_speed: float = 12.0
+var background: Dictionary = {}   # the level's background block, read by the view
 var score: int = 0
 var credits: int = 0
 var kills: int = 0
@@ -146,6 +147,7 @@ func set_power_step(step: float) -> void:
 
 func _load_level(level: Dictionary) -> void:
 	scroll_speed = level.get("scroll_speed", 12.0)
+	background = level.get("background", {})
 	_loop_length = level.get("loop_length", 30.0)
 	_hp_scale_per_loop = level.get("hp_scale_per_loop", 1.0)
 	_spawns.clear()

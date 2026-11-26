@@ -63,6 +63,9 @@ The formulas are listed in `DECISIONS.md` and their numbers live in `data/tech/p
 - **Set 1 "Frontier"**: mechanical faction above Earth-like worlds; balanced resistances.
 - **Set 2 "Bloom"**: biological swarm; weak to kinetic and splash, some enemies regenerate.
 - **Set 3 "Pyre"**: demonic technology; heavy units resist kinetic and explosive, fire area denial.
+- **Stage backdrops:** most stages fly low over the surface so the ground is readable: towns, roads
+  and grassland in set 1; the same world overgrown and infested in set 2; scorched, cracked and
+  lava-streaked in set 3. Some stages (orbital approach, fleet blockade) stay in orbit.
 - Stage 3 of each set has a mini-boss, stage 5 a multi-phase boss with destructible parts.
 
 ## 6. Technical plan

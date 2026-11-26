@@ -1,5 +1,10 @@
 # Changelog
 
+## After Milestone 2 feedback (2026-11-26)
+- New low-altitude terrain background (fields, forest, river, roads, city blocks with 3D buildings),
+  selected per level with `"background": { "type": "terrain" }`. The test range now uses it.
+- Fixed the mouse cursor staying visible at startup.
+
 ## Milestone 2: Playable core (2026-11-26)
 - Godot 4.7.2 project in `game/`, fixed 240 Hz simulation with interpolated rendering.
 - Mouse flying (relative by default, absolute optional), weapon 1 on LMB, weapon 2 on RMB,
