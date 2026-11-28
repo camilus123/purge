@@ -1,5 +1,9 @@
 # Changelog
 
+## Fixes (2026-11-28)
+- Both engines now leave a flame trail (one side was being skipped most of the time).
+- Buildings are no longer placed on highways, and footprints are smaller so they stay off city streets.
+
 ## Milestone 4: Shop and tech tree (2026-11-26)
 - Main menu: continue, new game (campaign or single set, Easy/Normal/Hard, save slot), load,
   settings, quit; a debug-only test range.
