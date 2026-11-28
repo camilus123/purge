@@ -532,6 +532,6 @@ func test_save_round_trip() -> void:
 
 func test_terrain_rules() -> void:
 	print("terrain")
-	check("no building on the highway that runs along the flight path", 1.0 if TerrainBackground.on_highway(0.0, 100.0) else 0.0, 1.0)
+	check("no building on the highway that runs along the flight path", 1.0 if TerrainBackground.on_highway(-sin(100.0 * 0.006) * 12.0, 100.0) else 0.0, 1.0)
 	check("no building on a crossing highway", 1.0 if TerrainBackground.on_highway(60.0, 256.0) else 0.0, 1.0)
 	check("buildings allowed away from highways", 0.0 if TerrainBackground.on_highway(60.0, 100.0) else 1.0, 1.0)
