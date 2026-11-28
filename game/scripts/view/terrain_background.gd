@@ -28,6 +28,16 @@ static func urban(x: float, z: float) -> float:
 	return sin(x * 0.021 + 1.7) * 0.6 + sin(z * 0.011 + 0.4) * 0.8 + sin((x + z) * 0.007) * 0.5
 
 
+## True where a building centred at ground position (x, z) would stand on a highway.
+## Must match the highway lines in terrain.gdshader (period 192 across, 256 along, half width 2.2).
+static func on_highway(x: float, z: float) -> bool:
+	var clear := 2.2 + 3.2
+	var hx := x + sin(z * 0.006) * 12.0
+	if absf(hx - roundf(hx / 192.0) * 192.0) < clear:
+		return true
+	return absf(z - roundf(z / 256.0) * 256.0) < clear
+
+
 static func _cell_random(i: int, j: int, salt: int) -> float:
 	var h := (i * 73856093) ^ (j * 19349663) ^ (salt * 83492791)
 	h = (h ^ (h >> 13)) * 1274126177
@@ -97,11 +107,12 @@ func _build_row(j: int) -> void:
 		var gx := (i + 0.5) * CELL
 		var u := urban(gx + _offset.x, gz + _offset.y)
 		var t := Transform3D(Basis.from_scale(Vector3.ZERO), Vector3.ZERO)
-		if u > 0.78 and _cell_random(i, j + int(_offset.y), 1) > 0.18:
+		if u > 0.78 and _cell_random(i, j + int(_offset.y), 1) > 0.18 and not on_highway(gx + _offset.x, gz + _offset.y):
 			# Taller towards the centre of a city.
 			var height := 2.5 + _cell_random(i, j, 2) * 5.0 + maxf(0.0, u - 0.95) * 22.0 * _cell_random(i, j, 3)
-			var w := 4.2 + _cell_random(i, j, 4) * 1.4
-			var d := 4.2 + _cell_random(i, j, 5) * 1.4
+			# Footprints stay clear of the streets on either side of the 8-unit cell.
+			var w := 3.6 + _cell_random(i, j, 4) * 1.2
+			var d := 3.6 + _cell_random(i, j, 5) * 1.2
 			t = Transform3D(Basis.from_scale(Vector3(w, height, d)), Vector3(gx, GROUND_Y + height * 0.5, gz))
 			var col := _palette[int(_cell_random(i, j, 6) * (_palette.size() - 0.01))]
 			_mm.set_instance_color(slot + c, col * (0.34 + 0.14 * _cell_random(i, j, 7)))

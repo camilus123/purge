@@ -378,11 +378,12 @@ func render(alpha: float, frame_dt: float, tick_dt: float, running: bool) -> voi
 
 	# Engine trail
 	if running and p.alive:
-		_trail_acc += frame_dt * 90.0
+		_trail_acc += frame_dt * 60.0
 		while _trail_acc >= 1.0:
 			_trail_acc -= 1.0
-			var side := -0.95 if (_fx_count & 1) == 0 else 0.95
-			_spawn_fx(_k_trail, px + side, py + 4.2, p.vx * 0.2, 55.0, 0.16, 1.0)
+			# One puff from each engine, every time.
+			_spawn_fx(_k_trail, px - 0.95, py + 4.2, p.vx * 0.2, 55.0, 0.16, 1.0)
+			_spawn_fx(_k_trail, px + 0.95, py + 4.2, p.vx * 0.2, 55.0, 0.16, 1.0)
 
 	_render_enemies(alpha)
 

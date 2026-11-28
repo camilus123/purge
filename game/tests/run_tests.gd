@@ -30,6 +30,7 @@ func _init() -> void:
 	test_repair_and_restock()
 	test_economy()
 	test_save_round_trip()
+	test_terrain_rules()
 	print("\n%d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -527,3 +528,10 @@ func test_save_round_trip() -> void:
 	SaveSystem.delete_slot(2)
 	check("slot deleted", 1.0 if SaveSystem.load_slot(2) == null else 0.0, 1.0)
 	SaveSystem.base_dir = SaveSystem.DIR
+
+
+func test_terrain_rules() -> void:
+	print("terrain")
+	check("no building on the highway that runs along the flight path", 1.0 if TerrainBackground.on_highway(0.0, 100.0) else 0.0, 1.0)
+	check("no building on a crossing highway", 1.0 if TerrainBackground.on_highway(60.0, 256.0) else 0.0, 1.0)
+	check("buildings allowed away from highways", 0.0 if TerrainBackground.on_highway(60.0, 100.0) else 1.0, 1.0)
